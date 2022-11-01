@@ -19,7 +19,7 @@ module Datacaster
 
         # transform_to_hash([:a, :b, :c] => pick(:a, :b, :c) & ...)
         keys = Array(key)
-        values_or_errors = Array(new_value.value || new_value.errors)
+        values_or_errors = Array(new_value.value.nil? ? new_value.errors : new_value.value)
         if keys.length != values_or_errors.length
           raise TypeError.new("When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
             "with number of elements equal to the number of elements in left-hand-side array.\n" \
