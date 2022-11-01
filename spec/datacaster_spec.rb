@@ -875,6 +875,14 @@
       expect(subject.(b: 123).to_dry_result).to eq Success({a: 123})
     end
 
+    it "works with fields equal to false" do
+      expect(subject.(b: false).to_dry_result).to eq Success({a: false})
+    end
+
+    it "works with fields equal to nil" do
+      expect(subject.(b: nil).to_dry_result).to eq Success({a: nil})
+    end
+
     it "doesn't fail when picked fileds are missing" do
       expect(subject.({}).to_dry_result).to eq Success({})
     end
