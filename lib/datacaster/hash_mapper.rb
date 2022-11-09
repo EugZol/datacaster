@@ -1,6 +1,15 @@
 module Datacaster
   class HashMapper < Base
     def initialize(fields)
+      keys = fields.keys.flatten
+      if keys.length != keys.uniq.length
+        intersection = keys.select { |k| keys.count(k) > 1 }.uniq.sort
+        raise ArgumentError.new("When using transform_to_hash([:a, :b, :c] => validator), " \
+          "each key should not be mentioned more then once on the left-hand-side. Instead, got these " \
+          "keys mentioned twice or more: #{intersection.inspect}."
+        )
+      end
+
       @fields = fields
     end
 
@@ -18,30 +27,32 @@ module Datacaster
         new_value = validator.(object)
 
         # transform_to_hash([:a, :b, :c] => pick(:a, :b, :c) & ...)
-        keys = Array(key)
-        values_or_errors =
-          if new_value.valid?
-            new_value.value.nil? ? [nil] : Array(new_value.value)
-          else
-            Array(new_value.errors)
-          end
+        if key.is_a?(Array)
+          unwrapped = new_value.valid? ? new_value.value : new_value.errors
 
-        if keys.length != values_or_errors.length
-          raise TypeError.new("When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
-            "with number of elements equal to the number of elements in left-hand-side array.\n" \
-            "Got the following (values or errors) instead: #{keys.inspect} => #{values_or_errors.inspect}.")
+          if key.length != unwrapped.length
+            raise TypeError.new("When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
+              "with number of elements equal to the number of elements in left-hand-side array.\n" \
+              "Got the following (values or errors) instead: #{keys.inspect} => #{values_or_errors.inspect}.")
+          end
         end
 
         if new_value.valid?
-          keys.each.with_index do |key, i|
-            result[key] = values_or_errors[i]
+          if key.is_a?(Array)
+            key.zip(new_value.value) do |new_key, new_key_value|
+              result[new_key] = new_key_value
+              checked_schema[new_key] = true
+            end
+          else
+            result[key] = new_value.value
             checked_schema[key] = true
           end
-
-          single_returned_schema = new_value.meta[:checked_schema].dup
-          checked_schema[keys.first] = single_returned_schema if keys.length == 1 && single_returned_schema
         else
-          errors.merge!(keys.zip(values_or_errors).to_h)
+          if key.is_a?(Array)
+            errors = self.class.merge_errors(errors, key.zip(new_value.errors).to_h)
+          else
+            errors = self.class.merge_errors(errors, {key => new_value.errors})
+          end
         end
       end
 

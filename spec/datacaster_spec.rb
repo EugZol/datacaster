@@ -919,6 +919,49 @@
       expect(mapping.(b: 3, c: 10).to_dry_result).to eq Success({a: 13})
     end
 
+    it "allows to pick multiple fields and set their value to single" do
+      mapping = Datacaster.schema do
+        transform_to_hash(
+          a1: pick(:b, :c),
+          [:a2] => pick(:b) & transform { [_1] },
+          b: remove,
+          c: remove
+        )
+      end
+
+      expect(mapping.(b: 3, c: 10).to_dry_result).to eq Success({
+        a1: [3, 10],
+        a2: 3
+      })
+    end
+
+    it "allows to pick multiple fields and set their value to single" do
+      mapping = Datacaster.schema do
+        transform_to_hash(
+          a1: pick(:b, :c),
+          [:a2] => pick(:b) & transform { [_1] },
+          b: remove,
+          c: remove
+        )
+      end
+
+      expect(mapping.(b: 3, c: 10).to_dry_result).to eq Success({
+        a1: [3, 10],
+        a2: 3
+      })
+    end
+
+    it "doesn't allow to pick intersecting fields when picking multiple fields" do
+      expect {
+        Datacaster.schema do
+          transform_to_hash(
+            [:a, :b] => transform_to_value([1, 2]),
+            :b => transform_to_value(5)
+          )
+        end
+      }.to raise_error(ArgumentError)
+    end
+
     it "allows to set multiple fields" do
       mapping = Datacaster.schema do
         transform_to_hash(
