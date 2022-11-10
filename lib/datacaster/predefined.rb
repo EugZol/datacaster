@@ -85,6 +85,10 @@ module Datacaster
       }
     end
 
+    def merge_message_keys(*keys)
+      MessageKeysMerger.new(keys)
+    end
+
     def responds_to(method)
       check('RespondsTo', "must respond to #{method.inspect}") { |x| x.respond_to?(method) }
     end

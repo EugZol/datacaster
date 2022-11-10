@@ -267,6 +267,21 @@
       expect(type.({a: "not a number", b: "not a boolean"}).to_dry_result).to eq \
         Failure(a: ["must be integer"], b: ["must be boolean"])
     end
+
+    it "removes unaccepted keys with hash_schema" do
+      params = {
+        name: "test",
+        email: "test@email"
+      }
+
+      subject = Datacaster.choosy_schema do
+        hash_schema(
+          user_info: any
+        )
+      end
+
+      expect(subject.(params).to_dry_result).to eq Failure(user_info: ["must be set"])
+    end
   end
 
   describe "and (&) node" do
@@ -748,7 +763,7 @@
         ]
 
         # There is no way to provide 'comment: ["must be absent"]' error if
-        # validation has failed mid way. Datacaster::Terminator can only
+        # validation has failed mid way. Datacaster::Terminator::Raising can only
         # ensure that there are no excess fields if all previous validations
         # have passed.
         expect(schema.(params).to_dry_result).to eq Failure({
@@ -978,6 +993,235 @@
       end
       expect(mapping.(a: 3, b: 2).to_dry_result).to eq Success({a: 2, b: 3})
       expect(mapping.(a: 1, b: 2).to_dry_result).to eq Failure({a: ["less than b"]})
+    end
+
+    describe "merge_message_keys" do
+      it "merges keys" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:b, :c),
+            b: remove,
+            c: remove
+          )
+        end
+
+        expect(mapping.(b: 3, c: 10).to_dry_result).to eq Success({a: [3, 10]})
+      end
+
+      it "merges hashes" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:b, :c),
+            b: remove,
+            c: remove
+          )
+        end
+
+        expect(mapping.(b: {a: 'asd'}, c: {a: '321', b: '123'}).to_dry_result)
+          .to eq Success({a: {a: ["asd", "321"], b: ["123"]}})
+      end
+
+      it "merges large hashes recusively" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:b, :c),
+            b: remove,
+            c: remove
+          )
+        end
+
+        expect(
+          mapping.(
+            b: {
+              a: { a: "1" }
+            },
+            c: {
+              a: { a: "2" }
+            }
+          ).to_dry_result
+        ).to eq(
+          Success(
+            a: {
+              a: {
+                a: ["1", "2"]
+              }
+            }
+          )
+        )
+      end
+
+      it "warps scalar values into array" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a)
+          )
+        end
+
+        expect(
+          mapping.(a: "1").to_dry_result
+        ).to eq(
+          Success(a: ["1"])
+        )
+      end
+
+      it "doesn't change incoming hash" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a),
+            b: pick(:a)
+          )
+        end
+
+        expect(
+          mapping.(a: "1").to_dry_result
+        ).to eq(
+          Success(a: ["1"], b: "1")
+        )
+      end
+
+      it "works correctly with multiple types of data" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a),
+            b: merge_message_keys(:b, :c),
+            c: remove
+          )
+        end
+
+        expect(
+          mapping.(
+            a: "1", b: {c: "asd", d: "123"}, c: {e: "asd", d: "456"}
+          ).to_dry_result
+        ).to eq(
+          Success(
+            {a: ["1"], b: {c: ["asd"], d: ["123", "456"], e: ["asd"]}}
+          )
+        )
+      end
+
+      it "works correctly with false values" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a),
+            b: merge_message_keys(:b, :c),
+            c: remove
+          )
+        end
+
+        expect(
+          mapping.(
+            a: false, b: {c: "asd", d: "123"}, c: {e: "asd", d: "456"}
+          ).to_dry_result
+        ).to eq(
+          Success(
+            {a: [false], b: {c: ["asd"], d: ["123", "456"], e: ["asd"]}}
+          )
+        )
+      end
+
+      it "ingore keys with nil and [] values" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a),
+            b: merge_message_keys(:b, :c),
+            c: remove,
+            d: remove
+          )
+        end
+
+        expect(
+          mapping.(
+            a: nil, b: {c: nil, d: "123"}, c: {e: "asd", d: "456", f: []}, d: []
+          ).to_dry_result
+        ).to eq(
+          Success(
+            {b: {d: ["123", "456"], e: ["asd"]}}
+          )
+        )
+      end
+
+      it "works with simple hash input" do
+        mapper = Datacaster.schema do
+          merge_message_keys(:a, :b)
+        end
+
+        expect(
+          mapper.(a: "1", b: "2").to_dry_result
+        ).to eq(
+          Success(["1", "2"])
+        )
+      end
+
+      it "merges non Hash objects to :base key" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a),
+            b: merge_message_keys(:b, :c, :d),
+            c: remove,
+            d: remove
+          )
+        end
+
+        expect(
+          mapping.(
+            a: "1", b: {c: "asd", d: "123"}, c: "test", d: 123
+          ).to_dry_result
+        ).to eq(
+          Success(
+            {a: ["1"], b: {base: ["test", 123], d: ["123"], c: ["asd"]}}
+          )
+        )
+      end
+    end
+
+    describe "choosy schema" do
+      it "removes unused keys with transform_to_hash" do
+        params = {
+          name: "test",
+          email: "test@email"
+        }
+
+        subject = Datacaster.choosy_schema do
+          transform_to_hash(
+            name: pick(:name)
+          )
+        end
+
+        expect(subject.(params).to_dry_result).to eq Success({name: "test"})
+      end
+
+      it "is able to pick multiple keys for a new hash" do
+        params = {
+          name: "test",
+          email: "test@email"
+        }
+
+        subject = Datacaster.choosy_schema do
+          transform_to_hash(
+            user_info: pick(:name, :email) & transform { |a, b| "#{a}:#{b}" }
+          )
+        end
+
+        expect(subject.(params).to_dry_result).to eq Success({user_info: "test:test@email"})
+      end
+
+      it "removes unmentioned keys with hash_schema" do
+        params = {
+          name: "test",
+          email: "test@email",
+          phone: "123456789"
+        }
+
+        subject = Datacaster.choosy_schema do
+          hash_schema(
+            name: string,
+            email: string,
+          )
+        end
+
+        expect(subject.(params).to_dry_result)
+          .to eq Success({name: "test", email: "test@email"})
+      end
     end
   end
 end

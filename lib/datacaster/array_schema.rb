@@ -2,7 +2,7 @@ module Datacaster
   class ArraySchema < Base
     def initialize(element_caster)
       # support of shortcut nested validation definitions, e.g. array_schema({a: [integer], b: {c: integer}})
-      @element_caster = shortcut_definition(element_caster) # & Terminator.instance
+      @element_caster = shortcut_definition(element_caster)
     end
 
     def call(object)

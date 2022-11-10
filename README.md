@@ -50,7 +50,7 @@ validator.(1).value       # nil
 validator.(1).errors      # ["must be string"]
 ```
 
-Datacaster instances are created with a call to `Datacaster.schema { ... }` or `Datacaster.partial_schema { ... }` (described later in this file).
+Datacaster instances are created with a call to `Datacaster.schema { ... }`, `Datacaster.partial_schema { ... }` or `Datacaster.choosy_schema { ... }` (described later in this file).
 
 Datacaster validators' results could be converted to [dry result monad](https://dry-rb.org/gems/dry-monads/1.0/result/):
 
@@ -135,7 +135,7 @@ person_validator.(name: "John Smith", salary: 100_000, title: "developer")
 # => Datacaster::ErrorResult({:title=>["must be absent"]})
 ```
 
-`Datacaster.schema` definitions don't permit, as you likely noticed from the example above, extra fields in the hash. In fact, `Datacaster.schema` automatically adds special built-in validator, called `Datacaster::Terminator`, at the end of your validation chain, which function is to ensure that all hash keys had been validated.
+`Datacaster.schema` definitions don't permit, as you likely noticed from the example above, extra fields in the hash. In fact, `Datacaster.schema` automatically adds special built-in validator, called `Datacaster::Terminator::Raising`, at the end of your validation chain, which function is to ensure that all hash keys had been validated.
 
 If you want to permit your hashes to contain extra fields, use `Datacaster.partial_schema` (it's the only difference between `.schema` and `.partial_schema`):
 
@@ -150,6 +150,21 @@ person_with_extra_keys_validator =
 
 person_with_extra_keys_validator.(name: "John Smith", salary: 100_000, title: "developer")
 # => Datacaster::ValidResult({:name=>"John Smith", :salary=>100000, :title=>"developer"})
+```
+
+Also if you want to delete extra fields, use `Datacaster.choosy_schema`:
+
+```ruby
+person_with_extra_keys_validator =
+  Datacaster.choosy_schema do
+    hash_schema(
+      name: string,
+      salary: integer
+    )
+  end
+
+person_with_extra_keys_validator.(name: "John Smith", salary: 100_000, age: 18)
+# => Datacaster::ValidResult({:name=>"John Smith", :salary=>100000})
 ```
 
 Datacaster 'hash schema' makes strict difference between absent and nil values, allows to use shortcuts for defining nested schemas (with no limitation on the level of nesting), and has convinient 'AND with error aggregation' (`*`, same symbol as in numbers multiplication) for joining validation errors of multiple failures. See below in the corresponding sections.
@@ -177,7 +192,7 @@ even_number.(2)
 even_number.(3)
 # => Datacaster::ErrorResult(["is invalid"])
 even_number.("test")
-# => #<Datacaster::ErrorResult(["must be integer"])>
+# => Datacaster::ErrorResult(["must be integer"])
 ```
 
 If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation. See below in this file section on transformations where this might be relevant.
@@ -325,7 +340,7 @@ max_concurrent_connections = Datacaster.schema { compare(nil).then(transform_to_
 
 max_concurrent_connections.(9)   # => Datacaster::ValidResult(9)
 max_concurrent_connections.("9") # => Datacaster::ErrorResult(["must be integer"])
-max_concurrent_connections.(nil) #=> #<Datacaster::ValidResult(5)>
+max_concurrent_connections.(nil) # => Datacaster::ValidResult(5)
 ```
 
 #### `remove`
@@ -396,6 +411,97 @@ pick_name_and_age.(name: "George", age: 20)       # => Datacaster::ValidResult([
 pick_name_and_age.(last_name: "Johnson", age: 20) # => Datacaster::ValidResult([#<Datacaster.absent>, 20])
 
 pick_name_and_age.("test")                        # => Datacaster::ErrorResult(["must be Enumerable"])
+```
+
+#### `merge_message_keys(*keys)`
+
+Returns ValidResult only if value `#is_a?(Hash)`.
+
+Maps incoming hash to Datacaster styled messages.
+
+```ruby
+mapper =
+  Datacaster.schema do
+    merge_message_keys(:a, :b)
+  end
+
+mapper.(a: "1", b: "2") # => Datacaster::ValidResult(["1", "2"])
+```
+
+Arrays are merged. Merging `["1", "2"]` and `["2", "3"]` will produce `["1", "2", "3"]` 
+
+Hash values are merged recursively (deeply) with one another:
+
+```ruby
+mapper = Datacaster.schema do
+  transform_to_hash(
+    resourse: merge_message_keys(:resourse),
+    user: merge_message_keys(:user, :login_params),
+    login_params: remove
+  )
+end
+
+mapper.(
+  resourse: "request was rejected",
+  user: {age: "too young", password: "too long"},
+  login_params: {password: "should contain special characters",
+  nickname: "too short"}
+)
+# => Datacaster::ValidResult({
+#     :resourse=>["request was rejected"],
+#     :user=>{
+#       :age=>["too young"],
+#       :password=>["too long", "should contain special characters"],
+#       :nickname=>["too short"]
+#     }
+#   })
+```
+
+Hash value merges non-Hash value by merging it with `:base` key (added if absent):
+
+```ruby
+mapping = Datacaster.schema do
+  transform_to_hash(
+    resourse: merge_message_keys(:resourse),
+    user: merge_message_keys(:user, :user_error),
+    user_error: remove
+  )
+end
+
+mapping.(
+  resourse: "request was rejected",
+  user: {age: "too young", nickname: "too long"},
+  user_error: "user is invalid"
+)
+# => Datacaster::ValidResult({
+#      :resourse=>["request was rejected"],
+#      :user=>{
+#        :age=>["too young"],
+#        :nickname=>["too long"],
+#        :base=>["user is invalid"]
+#      }
+# })
+```
+
+Hash keys with `nil` and `[]` values are deeply ignored:
+
+```ruby
+mapping = Datacaster.schema do
+  transform_to_hash(
+    user: merge_message_keys(:user),
+  )
+end
+
+mapping.(
+  user: {
+    age: "too young", nickname: [], user_error: nil
+  }
+)
+# => Datacaster::ValidResult({
+#      :user=> {
+#        :age=>["too young"]
+#      }
+#    })
 ```
 
 ### "Web-form" types
@@ -660,7 +766,7 @@ If a) fails, `ErrorResult(["must be hash"])` is returned.
 if b) fails, `ErrorResult(key1 => [errors...], key2 => [errors...])` is returned. Each key of wrapped "error hash" corresponds to the key of validated hash, and each value of "error hash" contains array of errors, returned by the corresponding validator.  
 If b) fulfilled, then and only then validated hash is checked for extra keys. If they are found, `ErrorResult(extra_key_1 => ["must be absent"], ...)` is returned.
 
-Technically, last part is implemented with special singleton validator, called `#<Datacaster::Terminator>`, which is automatically added to the validation chain (with the use of `&` operator) by `Datacaster.schema` method. Don't be scared if you see it in the output of `#inspect` method of your validators (e.g. in `irb`).
+Technically, last part is implemented with special singleton validator, called `#<Datacaster::Terminator::Raising>`, which is automatically added to the validation chain (with the use of `&` operator) by `Datacaster.schema` method. Don't be scared if you see it in the output of `#inspect` method of your validators (e.g. in `irb`).
 
 #### Absent is not nil
 
