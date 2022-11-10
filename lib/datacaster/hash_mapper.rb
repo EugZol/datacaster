@@ -5,7 +5,7 @@ module Datacaster
       if keys.length != keys.uniq.length
         intersection = keys.select { |k| keys.count(k) > 1 }.uniq.sort
         raise ArgumentError.new("When using transform_to_hash([:a, :b, :c] => validator), " \
-          "each key should not be mentioned more then once on the left-hand-side. Instead, got these " \
+          "each key should not be mentioned more than once on the left-hand-side. Instead, got these " \
           "keys mentioned twice or more: #{intersection.inspect}."
         )
       end
