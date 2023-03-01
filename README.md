@@ -4,6 +4,70 @@ This gem provides run-time type checking and mapping of composite data structure
 
 Its main use is in the validation and preliminary transformation of API params requests.
 
+
+# Table of contents
+
+- [Installing](#installing)
+- [Why not ...](#why-not-)
+- [Basics](#basics)
+  - [Conveyor belt](#conveyor-belt)
+  - [Result value](#result-value)
+  - [Hash schema](#hash-schema)
+  - [Logical operators](#logical-operators)
+    - [*AND operator*:](#and-operator)
+    - [*OR operator*:](#or-operator)
+    - [*IF... THEN... ELSE operator*:](#if-then-else-operator)
+- [Built-in types](#built-in-types)
+  - [Basic types](#basic-types)
+    - [`string`](#string)
+    - [`integer`](#integer)
+    - [`float`](#float)
+    - [`decimal([digits = 8])`](#decimaldigits--8)
+    - [`array`](#array)
+    - [`hash_value`](#hash_value)
+  - [Convenience types](#convenience-types)
+    - [`non_empty_string`](#non_empty_string)
+    - [`hash_with_symbolized_keys`](#hash_with_symbolized_keys)
+    - [`integer32`](#integer32)
+  - [Special types](#special-types)
+    - [`absent`](#absent)
+    - [`any`](#any)
+    - [`transform_to_value(value)`](#transform_to_valuevalue)
+    - [`remove`](#remove)
+    - [`pass`](#pass)
+    - [`responds_to(method)`](#responds_tomethod)
+    - [`must_be(klass)`](#must_beklass)
+    - [`optional(base)`](#optionalbase)
+    - [`pick(key)`](#pickkey)
+    - [`merge_message_keys(*keys)`](#merge_message_keyskeys)
+  - ["Web-form" types](#web-form-types)
+    - [`to_integer`](#to_integer)
+    - [`to_float`](#to_float)
+    - [`to_boolean`](#to_boolean)
+    - [`iso8601`](#iso8601)
+    - [`optional_param(base)`](#optional_parambase)
+  - [Custom and fundamental types](#custom-and-fundamental-types)
+    - [`cast(name = 'Anonymous') { |value| ... }`](#castname--anonymous--value--)
+    - [`check(name = 'Anonymous', error = 'is invalid') { |value| ... }`](#checkname--anonymous-error--is-invalid--value--)
+    - [`try(name = 'Anonymous', error = 'is invalid', catched_exception:) { |value| ... }`](#tryname--anonymous-error--is-invalid-catched_exception--value--)
+    - [`validate(active_model_validations, name = 'Anonymous')`](#validateactive_model_validations-name--anonymous)
+    - [`compare(reference_value, name = 'Anonymous', error = nil)`](#comparereference_value-name--anonymous-error--nil)
+    - [`transform(name = 'Anonymous') { |value| ... }`](#transformname--anonymous--value--)
+    - [`transform_if_present(name = 'Anonymous') { |value| ... }`](#transform_if_presentname--anonymous--value--)
+  - [Passing additional context to schemas](#passing-additional-context-to-schemas)
+  - [Array schemas](#array-schemas)
+  - [Hash schemas](#hash-schemas)
+    - [Absent is not nil](#absent-is-not-nil)
+    - [Schema vs Partial schema](#schema-vs-partial-schema)
+    - [AND with error aggregation (`*`)](#and-with-error-aggregation-)
+  - [Shortcut nested definitions](#shortcut-nested-definitions)
+  - [Mapping hashes: `transform_to_hash`](#mapping-hashes-transform_to_hash)
+- [Error remapping](#error-remapping)
+- [Registering custom 'predefined' types](#registering-custom-predefined-types)
+- [Contributing](#contributing)
+- [Ideas/TODO](#ideastodo)
+- [License](#license)
+
 ## Installing
 
 Add to your Gemfile:
@@ -103,9 +167,9 @@ Validating hashes is the main case scenario for datacaster. Several specific con
 Let's assume we want to validate that a hash (which represents data about a person):
 
 a) is, in fact, a Hash;  
-a) has exactly 2 keys, `name` and `salary`,  
-b) key 'name' is a string,  
-c) key 'salary' is an integer:
+b) has exactly 2 keys, `name` and `salary`,  
+c) key 'name' is a string,  
+d) key 'salary' is an integer:
 
 ```ruby
 person_validator =
@@ -215,7 +279,7 @@ Notice that OR operator, if left-hand validation fails, passes the original valu
 
 Let's suppose we want to validate that incoming hash is either 'person' or 'entity', where
 
-- 'person' is a hash with 3 keys (kind: `:person`, name: string, salary: integer),  
+- 'person' is a hash with 3 keys (kind: `:person`, name: string, salary: integer),
 - 'entity' is a hash with 4 keys (kind: `:entity`, title: string, form: string, revenue: integer).
 
 ```ruby
@@ -428,7 +492,7 @@ mapper =
 mapper.(a: "1", b: "2") # => Datacaster::ValidResult(["1", "2"])
 ```
 
-Arrays are merged. Merging `["1", "2"]` and `["2", "3"]` will produce `["1", "2", "3"]` 
+Arrays are merged. Merging `["1", "2"]` and `["2", "3"]` will produce `["1", "2", "3"]`.
 
 Hash values are merged recursively (deeply) with one another:
 
@@ -443,9 +507,13 @@ end
 
 mapper.(
   resourse: "request was rejected",
-  user: {age: "too young", password: "too long"},
-  login_params: {password: "should contain special characters",
-  nickname: "too short"}
+  user: {
+    age: "too young", password: "too long"
+  },
+  login_params: {
+    password: "should contain special characters",
+    nickname: "too short"
+  }
 )
 # => Datacaster::ValidResult({
 #     :resourse=>["request was rejected"],
@@ -678,6 +746,49 @@ city.(name: "Denver", distance: "2.5") # => Datacaster::ValidResult({:name=>"Den
 
 Always returns ValidResult. If the value is `Datacaster.absent` (singleton instance, see below section on hash schemas), then `Datacaster.absent` is returned (block isn't called). Otherwise, works like `transform`.
 
+###  Passing additional context to schemas
+
+You can pass `context` to schema using `.with_context` method
+
+```ruby
+# class User < ApplicationRecord
+#  ...
+# end
+#
+# class Post < ApplicationRecord
+#   belongs_to :user
+#   ...
+# end
+
+schema =
+  Datacaster.schema do
+    hash_schema(
+      post_id: to_integer & check { |id| Post.where(id: id, user_id: context.current_user).exists? }
+    )
+  end
+
+current_user = ...
+
+schema.with_context(current_user: current_user).(post_id: 15)
+```
+
+`context` is an [OpenStruct](https://ruby-doc.org/stdlib-3.1.0/libdoc/ostruct/rdoc/OpenStruct.html) instance which is initialized in `.with_context`
+
+**Note**
+
+`context` can be accesed only in types' blocks:
+```ruby
+mail_transformer = Datacaster.schema { transform { |v| "#{v}#{context.postfix}" } }
+
+mail_transformer.with_context(postfix: "@domen.com").("admin")
+# => #<Datacaster::ValidResult("admin@domen.com")>
+```
+It can't be used in schema definition block itself:
+```ruby
+Datacaster.schema { context.error }
+# leads to `NoMethodError`
+```
+
 ### Array schemas
 
 To define compound data type, array of 'something', use `array_schema(something)` (or, synonymically, `array_of(something)`). There is no way to define array wherein each element is of different type.
@@ -841,7 +952,7 @@ Sometimes it is necessary to omit that requirement and allow for hash to contain
 
 Let's say we have:
 
-* 'people' (hashes with `name: string`, `description: string` and `kind: 'person'` fields),  
+* 'people' (hashes with `name: string`, `description: string` and `kind: 'person'` fields),
 * 'entities' (hash with `title: string`, `description: string` and `kind: 'entity'` fields).
 
 In other words, we have some polymorphic resource, which type is defined by `kind` field, and which has common fields for all its "sub-kinds" (in this example: `description`), and also fields specific to each "kind" (in database we often model this as [STI](https://api.rubyonrails.org/v6.0.3.2/classes/ActiveRecord/Base.html#class-ActiveRecord::Base-label-Single+table+inheritance)).
@@ -1072,6 +1183,77 @@ Here is what is happening when `city_with_distance` (from the example above) is 
 * `distance_in_meters` value is created by transforming initial value to `Datacaster.absent` (that is how `remove` works)
 
 Note: because of point e) above we need to explicitly delete `distance_in_meters` key, because otherwise `transform_to_hash` will copy it to the resultant hash without validation. And all non-validated keys at the end of `Datacaster.schema` block (as explained above in section on partial schemas) result in error.
+
+## Error remapping
+
+In some cases it might be useful to remap resulting `Datacaster::ErrorResult`:
+
+```ruby
+schema =
+  Datacaster.schema do
+    transform = transform_to_hash(
+      posts: pick(:user_id) & to_integer & transform { |user| Posts.where(user_id: user.id).to_a },
+      user_id: remove
+    )
+  end
+
+schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:posts=>["must be integer"]})>
+# Instead of #<Datacaster::ErrorResult({:user_id=>["must be integer"]})>
+```
+
+`.cast_errors` can be used in such case:
+
+```ruby
+schema =
+  Datacaster.schema do
+    transform = transform_to_hash(
+      posts: pick(:user_id) & to_integer & transform { |user| Posts.where(user_id: user.id).to_a },
+      user_id: remove
+    )
+
+    transform.cast_errors(
+      transform_to_hash(
+        user_id: pick(:posts),
+        posts: remove
+      )
+    )
+  end
+
+schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:user_id=>["must be integer"]})>
+```
+any instance of `Datacaster` can be passed to `.cast_errors`
+
+
+## Registering custom 'predefined' types
+
+In order to extend `Datacaster` functionality, custom types can be added
+
+There are two ways to add cutsom types to `Datacaster`:
+
+1\. Using lambda definition:
+
+```ruby
+Datacaster::Config.add_predefined_caster(:time_string, -> {
+  string & validate(format: { with: /\A(0[0-9]|1[0-9]|2[0-3]):[03]0\z/ })
+})
+
+schema = Datacaster.schema { time_string }
+
+schema.("23:00") # => #<Datacaster::ValidResult("23:00")>
+schema.("no_time_string") # => #<Datacaster::ErrorResult(["is invalid"])>
+```
+
+2\. Using `Datacaster` instance:
+
+```ruby
+css_color = Datacaster.partial_schema { string & validate(format: { with: /\A#(?:\h{3}){1,2}\z/ }) }
+Datacaster::Config.add_predefined_caster(:css_color, css_color)
+
+schema = Datacaster.schema { css_color }
+
+schema.("#123456") # => #<Datacaster::ValidResult("#123456")>
+schema.("no_css_color") #  => #<Datacaster::ErrorResult(["is invalid"])>
+```
 
 ## Contributing
 

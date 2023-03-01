@@ -10,7 +10,7 @@ module Datacaster
         klass.include Singleton
       end
 
-      def call(object, checked_schema = nil)
+      def cast(object, checked_schema = nil)
         object = super(object)
         checked_schema ||= object.meta[:checked_schema]
 
@@ -33,7 +33,7 @@ module Datacaster
       def check_array(array, checked_schema)
         return Datacaster.ValidResult(array) unless checked_schema
 
-        result = array.zip(checked_schema).map { |x, schema| call(x, schema) }
+        result = array.zip(checked_schema).map { |x, schema| cast(x, schema) }
 
         if result.all?(&:valid?)
           Datacaster.ValidResult(result.map(&:value))
@@ -63,7 +63,7 @@ module Datacaster
             next
           end
 
-          nested_value = call(v, checked_schema[k])
+          nested_value = cast(v, checked_schema[k])
           if nested_value.valid?
             result[k] = nested_value.value
           else

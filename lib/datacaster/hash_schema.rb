@@ -6,9 +6,8 @@ module Datacaster
       @fields.transform_values! { |validator| shortcut_definition(validator) }
     end
 
-    def call(object)
+    def cast(object)
       object = super(object)
-
       return Datacaster.ErrorResult(["must be hash"]) unless object.value.is_a?(Hash)
 
       checked_schema = object.meta[:checked_schema].dup || {}

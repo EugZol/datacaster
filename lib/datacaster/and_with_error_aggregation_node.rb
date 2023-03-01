@@ -7,9 +7,8 @@ module Datacaster
 
     # Works like AndNode, but doesn't stop at first error — in order to aggregate all Failures
     # Makes sense only for Hash Schemas
-    def call(object)
+    def cast(object)
       object = super(object)
-
       left_result = @left.(object)
 
       if left_result.valid?
