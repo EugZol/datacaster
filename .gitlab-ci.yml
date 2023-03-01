@@ -1,0 +1,8 @@
+image: ruby:latest
+
+before_script:
+  - bundle install
+
+rspec:
+  script:
+    - bundle exec rspec

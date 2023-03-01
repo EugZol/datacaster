@@ -13,9 +13,8 @@ module Datacaster
       @fields = fields
     end
 
-    def call(object)
+    def cast(object)
       object = super(object)
-
       # return Datacaster.ErrorResult(["must be hash"]) unless object.value.is_a?(Hash)
 
       checked_schema = object.meta[:checked_schema].dup || {}

@@ -5,9 +5,8 @@ module Datacaster
       @right = right
     end
 
-    def call(object)
+    def cast(object)
       object = super(object)
-
       left_result = @left.(object)
 
       return left_result if left_result.valid?

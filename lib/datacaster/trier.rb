@@ -9,7 +9,7 @@ module Datacaster
       @transform = block
     end
 
-    def call(object)
+    def cast(object)
       intermediary_result = super(object)
       object = intermediary_result.value
 

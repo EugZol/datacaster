@@ -4,7 +4,7 @@ module Datacaster
       @keys = keys
     end
 
-    def call(object)
+    def cast(object)
       intermediary_result = super(object)
       object = intermediary_result.value
 
@@ -35,7 +35,8 @@ module Datacaster
     end
 
     def need_hash_merger?(object)
-      @keys.any? { |k| object[k].is_a?(Hash) }
+      @need_hash_merger = 
+        @need_hash_merger.nil? ? @keys.any? { |k| object[k].is_a?(Hash) } : @need_hash_merger
     end
 
     def merge_array_or_scalar(unit, merge_with)

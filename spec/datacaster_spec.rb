@@ -1,4 +1,4 @@
- RSpec.describe Datacaster do
+RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
   describe "any typecasting" do
@@ -281,6 +281,42 @@
       end
 
       expect(subject.(params).to_dry_result).to eq Failure(user_info: ["must be set"])
+    end
+  end
+
+  describe "using context" do
+    it "can be used with context" do
+      type = described_class.schema { check { |x| x == context.test } }
+
+      expect(type.with_context(test: "asd").("asd").to_dry_result).to eq Success("asd")
+    end
+
+    it "can access context in deeply nested params" do
+      schema = described_class.schema do
+        hash_schema(
+          title: string,
+          owner: {
+            name: string,
+            title: string & check { |v| v == context.params }
+          }
+        )
+      end
+
+      expect(
+        schema.with_context(params: "CEO").(
+          title: "title",
+          owner: {
+            name: "boss",
+            title: "CEO"
+          }
+        ).to_dry_result
+      ).to eq Success(
+        title: "title",
+        owner: {
+          name: "boss",
+          title: "CEO"
+        }
+      )
     end
   end
 
@@ -995,6 +1031,86 @@
       expect(mapping.(a: 1, b: 2).to_dry_result).to eq Failure({a: ["less than b"]})
     end
 
+    describe "cast_errors" do
+      context "remaps errors with #cast_errors" do
+      it "with transform_to_hash" do
+          type = described_class.schema do
+            transform = transform_to_hash(
+               b: pick(:a) & integer,
+               a: remove
+             )
+
+            transform.cast_errors(
+              transform_to_hash(
+                a: pick(:b),
+                b: remove
+              )
+            )
+          end
+
+          expect(type.(a: 'wrong').to_dry_result).to eq Failure(a: ["must be integer"])
+        end
+
+        it "with pick" do
+          type = described_class.schema do
+            transform = transform_to_hash(
+               b: pick(:a) & integer,
+               a: remove
+             )
+
+            transform.cast_errors pick(:b)
+          end
+
+          expect(type.(a: 'wrong').to_dry_result).to eq Failure(["must be integer"])
+        end
+      end
+
+      it "remaps errors for complex schemas with composition" do
+        schema1 = described_class.partial_schema do
+          transform = transform_to_hash(
+             b: pick(:a) & integer,
+             a: remove
+           )
+
+          transform.cast_errors pick(:b)
+        end
+
+        schema2 = described_class.choosy_schema do
+          transform = transform_to_hash(
+             d: pick(:c) & integer,
+             c: remove
+           )
+        end
+
+        schema3 = described_class.schema do
+          (schema1 * schema2).cast_errors(
+            Datacaster.choosy_schema do
+              transform_to_hash(
+                c: pick(:d),
+                base: pick(:base)
+              )
+            end
+          )
+        end
+
+        expect(schema3.(a: "asd", c: "asd", e: "asd").to_dry_result)
+          .to eq Failure(base: ["must be integer"], c: ["must be integer"])
+      end
+
+      it "raises an error in case of ErrorResult" do
+        schema = Datacaster.schema do
+          caster = to_integer
+
+          caster.cast_errors to_integer
+        end
+
+        expect { schema.("not_an_int") }
+          .to raise_error(
+            '#cast_errors must return Datacaster.ValidResult, currently it is #<Datacaster::ErrorResult(["must be integer"])>'
+          )
+      end
+    end
+
     describe "merge_message_keys" do
       it "merges keys" do
         mapping = Datacaster.schema do
@@ -1222,6 +1338,29 @@
         expect(subject.(params).to_dry_result)
           .to eq Success({name: "test", email: "test@email"})
       end
+    end
+  end
+
+  describe "adding custom casters" do
+    it "adds custom caster via lambda definition" do
+      Datacaster::Config.add_predefined_caster(:time_string, -> {
+        string & validate(format: { with: /\A(0[0-9]|1[0-9]|2[0-3]):[03]0\z/ })
+      })
+
+      schema = Datacaster.schema { time_string }
+
+      expect(schema.("23:00").to_dry_result).to eq Success("23:00")
+      expect(schema.("no_time_string").to_dry_result).to eq Failure(["is invalid"])
+    end
+
+    it "adds custom caster via datacaster instance" do
+      CSS_COLOR = Datacaster.schema { string & validate(format: { with: /\A#(?:\h{3}){1,2}\z/ }) }
+      Datacaster::Config.add_predefined_caster(:css_color, CSS_COLOR)
+
+      schema = Datacaster.schema { css_color }
+
+      expect(schema.("#123456").to_dry_result).to eq Success("#123456")
+      expect(schema.("no_css_color").to_dry_result).to eq Failure(["is invalid"])
     end
   end
 end

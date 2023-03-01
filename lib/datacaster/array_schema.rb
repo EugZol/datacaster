@@ -5,7 +5,7 @@ module Datacaster
       @element_caster = shortcut_definition(element_caster)
     end
 
-    def call(object)
+    def cast(object)
       object = super(object)
       checked_schema = object.meta[:checked_schema] || []
 

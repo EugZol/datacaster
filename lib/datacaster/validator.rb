@@ -26,7 +26,7 @@ module Datacaster
       @validator = self.class.create_active_model(validations)
     end
 
-    def call(object)
+    def cast(object)
       intermediary_result = super(object)
       object = intermediary_result.value
 

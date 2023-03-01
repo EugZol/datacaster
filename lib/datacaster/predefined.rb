@@ -33,6 +33,7 @@ module Datacaster
     def array_schema(element_caster)
       ArraySchema.new(element_caster)
     end
+    alias_method :array_of, :array_schema
 
     def hash_schema(fields)
       HashSchema.new(fields)
