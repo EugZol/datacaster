@@ -44,7 +44,7 @@ module Datacaster
       unit = [unit] unless unit.is_a?(Array)
 
       result = clean(unit | merge_with)
-      result.uniq == [nil] || result == [] ? Datacaster.absent : result
+      result == [] ? Datacaster.absent : result
     end
 
     def value_or(value, default)
@@ -54,12 +54,8 @@ module Datacaster
     def merge_hash_with_hash(result, merge_with)
       if merge_with.is_a?(Hash)
         merge_with.each do |k, v|
-          if merge_with.is_a?(Hash)
-            result = value_or(result, {})
-            result[k] = merge_hash_with_hash(result[k], v)
-          else
-            result[k] = merge_array_or_scalar(value_or(result[k], []), v)
-          end
+          result = value_or(result, {})
+          result[k] = merge_hash_with_hash(result[k], v)
         end
 
         result
@@ -85,12 +81,12 @@ module Datacaster
       when Array
         value.delete_if do |v|
           clean(v) if v.is_a?(Hash) || v.is_a?(Array)
-          v == Datacaster.absent
+          v == Datacaster.absent || v == nil
         end
       when Hash
         value.delete_if do |_k, v|
           clean(v) if v.is_a?(Hash) || v.is_a?(Array)
-          v == Datacaster.absent
+          v == Datacaster.absent || v == nil
         end
       end
     end
