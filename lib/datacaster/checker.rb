@@ -8,11 +8,8 @@ module Datacaster
       @check = block
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
-      if @check.(object)
+    def cast(object, runtime:)
+      if Runtime.(runtime, @check, object)
         Datacaster.ValidResult(object)
       else
         Datacaster.ErrorResult([@error])

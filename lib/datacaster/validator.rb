@@ -26,10 +26,7 @@ module Datacaster
       @validator = self.class.create_active_model(validations)
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
+    def cast(object, runtime:)
       @validator.value = object
       @validator.valid? ? Datacaster.ValidResult(object) : Datacaster.ErrorResult(@validator.errors[:value])
     end

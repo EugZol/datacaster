@@ -13,17 +13,14 @@ module Datacaster
       @fields = fields
     end
 
-    def cast(object)
-      object = super(object)
-      # return Datacaster.ErrorResult(["must be hash"]) unless object.value.is_a?(Hash)
-
-      checked_schema = object.meta[:checked_schema].dup || {}
-
+    def cast(object, runtime:)
       errors = {}
       result = {}
 
+      runtime.will_check!
+
       @fields.each do |key, validator|
-        new_value = validator.(object)
+        new_value = runtime.ignore_checks! { validator.with_runtime(runtime).(object) }
 
         # transform_to_hash([:a, :b, :c] => pick(:a, :b, :c) & ...)
         if key.is_a?(Array)
@@ -40,11 +37,11 @@ module Datacaster
           if key.is_a?(Array)
             key.zip(new_value.value) do |new_key, new_key_value|
               result[new_key] = new_key_value
-              checked_schema[new_key] = true
+              runtime.checked_key!(new_key)
             end
           else
             result[key] = new_value.value
-            checked_schema[key] = true
+            runtime.checked_key!(key)
           end
         else
           if key.is_a?(Array)
@@ -58,17 +55,17 @@ module Datacaster
       errors.delete_if { |_, v| v.empty? }
 
       if errors.empty?
-        # All unchecked key-value pairs of initial hash are passed through, and eliminated by Terminator
+        # All unchecked key-value pairs of initial hash are passed through, and eliminated by ContextNode
         # at the end of the chain. If we weren't dealing with the hash, then ignore that.
         result_hash =
-          if object.value.is_a?(Hash)
-            object.value.merge(result)
+          if object.is_a?(Hash)
+            object.merge(result)
           else
             result
           end
 
         result_hash.keys.each { |k| result_hash.delete(k) if result_hash[k] == Datacaster.absent }
-        Datacaster.ValidResult(result_hash, meta: {checked_schema: checked_schema})
+        Datacaster.ValidResult(result_hash)
       else
         Datacaster.ErrorResult(errors)
       end

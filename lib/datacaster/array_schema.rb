@@ -1,28 +1,24 @@
 module Datacaster
   class ArraySchema < Base
     def initialize(element_caster)
-      # support of shortcut nested validation definitions, e.g. array_schema({a: [integer], b: {c: integer}})
-      @element_caster = shortcut_definition(element_caster)
+      @element_caster = element_caster
     end
 
-    def cast(object)
-      object = super(object)
-      checked_schema = object.meta[:checked_schema] || []
-
-      array = object.value
-
+    def cast(array, runtime:)
       return Datacaster.ErrorResult(["must be array"]) if !array.respond_to?(:map) || !array.respond_to?(:zip)
       return Datacaster.ErrorResult(["must not be empty"]) if array.empty?
 
+      runtime.will_check!
+
       result =
-        array.zip(checked_schema).map do |x, schema|
-          x = Datacaster.ValidResult(x, meta: {checked_schema: schema})
-          @element_caster.(x)
+        array.map.with_index do |x, i|
+          runtime.checked_key!(i) do
+            @element_caster.with_runtime(runtime).(x)
+          end
         end
 
       if result.all?(&:valid?)
-        checked_schema = result.map { |x| x.meta[:checked_schema] }
-        Datacaster.ValidResult(result.map(&:value), meta: {checked_schema: checked_schema})
+        Datacaster.ValidResult(result.map!(&:value))
       else
         Datacaster.ErrorResult(result.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.errors] }.to_h)
       end

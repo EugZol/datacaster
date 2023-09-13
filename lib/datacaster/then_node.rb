@@ -12,18 +12,17 @@ module Datacaster
       self
     end
 
-    def cast(object)
+    def cast(object, runtime:)
       unless @else
         raise ArgumentError.new('Datacaster: use "a & b" instead of "a.then(b)" when there is no else-clause')
       end
 
-      object = super(object)
-      left_result = @left.(object)
+      left_result = @left.with_runtime(runtime).(object)
 
       if left_result.valid?
-        @then.(left_result)
+        @then.with_runtime(runtime).(left_result.value)
       else
-        @else.(object)
+        @else.with_runtime(runtime).(object)
       end
     end
 

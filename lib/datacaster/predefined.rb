@@ -31,16 +31,19 @@ module Datacaster
     end
 
     def array_schema(element_caster)
-      ArraySchema.new(element_caster)
+      ArraySchema.new(DefinitionDSL.expand(element_caster))
     end
     alias_method :array_of, :array_schema
 
     def hash_schema(fields)
-      HashSchema.new(fields)
+      unless fields.is_a?(Hash)
+        raise "Expected field definitions in a form of Hash for hash_schema, got #{fields.inspect} instead"
+      end
+      DefinitionDSL.expand(fields)
     end
 
     def transform_to_hash(fields)
-      HashMapper.new(fields)
+      HashMapper.new(fields.transform_values { |x| DefinitionDSL.expand(x) })
     end
 
     def validate(active_model_validations, name = 'Anonymous')

@@ -5,13 +5,12 @@ module Datacaster
       @right = right
     end
 
-    def cast(object)
-      object = super(object)
-      left_result = @left.(object)
+    def cast(object, runtime:)
+      left_result = @left.with_runtime(runtime).(object)
 
       return left_result if left_result.valid?
 
-      @right.(object)
+      @right.with_runtime(runtime).(object)
     end
 
     def inspect

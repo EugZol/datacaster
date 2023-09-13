@@ -1,5 +1,3 @@
-require "ostruct"
-
 module Datacaster
   class Base
     def self.merge_errors(left, right)
@@ -47,62 +45,26 @@ module Datacaster
       ThenNode.new(self, other)
     end
 
-    def set_definition_context(definition_context)
-      @definition_context = definition_context
-    end
-
-    def with_context(additional_context)
-      @definition_context.context = OpenStruct.new(additional_context)
-      self
-    end
-
     def call(object)
-      object = cast(object)
-
-      return object if object.valid? || @cast_errors.nil?
-
-      error_cast = @cast_errors.(object.errors)
-
-      raise "#cast_errors must return Datacaster.ValidResult, currently it is #{error_cast.inspect}" unless error_cast.valid?
-
-      Datacaster.ErrorResult(
-        @cast_errors.(object.errors).value,
-        meta: object.meta
-      )
+      call_with_runtime(object, Runtime.new)
     end
 
-    def cast_errors(object)
-      @cast_errors = shortcut_definition(object)
-      self
+    def call_with_runtime(object, runtime)
+      result = cast(object, runtime: runtime)
+      unless result.is_a?(Result)
+        raise RuntimeError.new("Caster should've returned Datacaster::Result, but returned #{result.inspect} instead")
+      end
+      result
+    end
+
+    def with_runtime(runtime)
+      ->(object) do
+        call_with_runtime(object, runtime)
+      end
     end
 
     def inspect
       "#<Datacaster::Base>"
-    end
-
-    private
-
-    def cast(object)
-      Datacaster.ValidResult(object)
-    end
-
-    # Translates hashes like {a: <IntegerChecker>} to <HashSchema {a: <IntegerChecker>}>
-    #   and arrays like [<IntegerChecker>] to <ArraySchema <IntegerChecker>>
-    def shortcut_definition(definition)
-      case definition
-      when Datacaster::Base
-        definition
-      when Array
-        if definition.length != 1
-          raise ArgumentError.new("Datacaster: shortcut array definitions must have exactly 1 element in the array, e.g. [integer]")
-        end
-        ArraySchema.new(definition.first)
-      when Hash
-        HashSchema.new(definition)
-      else
-        return definition if definition.respond_to?(:call)
-        raise ArgumentError.new("Datacaster: Unknown definition #{definition.inspect}, which doesn't respond to #call")
-      end
     end
   end
 end

@@ -4,10 +4,7 @@ module Datacaster
       @keys = keys
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
+    def cast(object, runtime:)
       return Datacaster.ErrorResult(["must be Hash"]) unless object.is_a?(Hash)
 
       result = set_initial_value(object)
@@ -35,7 +32,7 @@ module Datacaster
     end
 
     def need_hash_merger?(object)
-      @need_hash_merger = 
+      @need_hash_merger =
         @need_hash_merger.nil? ? @keys.any? { |k| object[k].is_a?(Hash) } : @need_hash_merger
     end
 

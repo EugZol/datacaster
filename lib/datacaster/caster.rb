@@ -7,11 +7,8 @@ module Datacaster
       @cast = block
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
-      result = @cast.(object)
+    def cast(object, runtime:)
+      result = Runtime.(runtime, @cast, object)
 
       raise TypeError.new("Either Datacaster::Result or Dry::Monads::Result " \
         "should be returned from cast block") unless [Datacaster::Result, Dry::Monads::Result].any? { |k| result.is_a?(k) }
