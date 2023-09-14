@@ -7,11 +7,8 @@ module Datacaster
       @transform = block
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
-      Datacaster.ValidResult(@transform.(object))
+    def cast(object, runtime:)
+      Datacaster.ValidResult(Runtime.(runtime, @transform, object))
     end
 
     def inspect

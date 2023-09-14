@@ -2,13 +2,11 @@ require 'dry/monads'
 
 module Datacaster
   class Result
-    attr_accessor :meta
     include Dry::Monads[:result]
 
-    def initialize(valid, value_or_errors, meta: nil)
+    def initialize(valid, value_or_errors)
       @value_or_errors = value_or_errors
       @valid = !!valid
-      @meta = meta || {}
     end
 
     def valid?
@@ -17,6 +15,11 @@ module Datacaster
 
     def value
       @valid ? @value_or_errors : nil
+    end
+
+    def value!
+      raise "Tried to unwrap value of error result: #{inspect}" unless valid?
+      value
     end
 
     def errors
@@ -39,23 +42,21 @@ module Datacaster
     end
   end
 
-  def self.ValidResult(object, meta: nil)
+  def self.ValidResult(object)
     if object.is_a?(Result)
       raise "Can't create valid result from error #{object.inspect}" unless object.valid?
-      object.meta = meta if meta
       object
     else
-      Result.new(true, object, meta: meta)
+      Result.new(true, object)
     end
   end
 
-  def self.ErrorResult(object, meta: nil)
+  def self.ErrorResult(object)
     if object.is_a?(Result)
       raise "Can't create error result from valid #{object.inspect}" if object.valid?
-      object.meta = meta if meta
       object
     else
-      Result.new(false, object, meta: meta)
+      Result.new(false, object)
     end
   end
 end

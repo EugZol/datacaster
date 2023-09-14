@@ -1221,7 +1221,10 @@ schema =
 
 schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:user_id=>["must be integer"]})>
 ```
-any instance of `Datacaster` can be passed to `.cast_errors`
+
+`.cast_errors` will extract errors from the `ErrorResult` and provide them as hash value for the provided caster. If that caster returns `ErrorResult`, runtime exception is raised. If that caster returns `ValidResult`, it is packed back into `ErrorResult` and returned.
+
+Any instance of `Datacaster` can be passed to `.cast_errors`.
 
 
 ## Registering custom 'predefined' types

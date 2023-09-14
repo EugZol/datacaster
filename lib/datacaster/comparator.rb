@@ -6,10 +6,7 @@ module Datacaster
       @error = error || "must be equal to #{value.inspect}"
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
+    def cast(object, runtime:)
       if @value == object
         Datacaster.ValidResult(object)
       else

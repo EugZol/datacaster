@@ -9,12 +9,9 @@ module Datacaster
       @transform = block
     end
 
-    def cast(object)
-      intermediary_result = super(object)
-      object = intermediary_result.value
-
+    def cast(object, runtime:)
       begin
-        Datacaster.ValidResult(@transform.(object))
+        Datacaster.ValidResult(Runtime.(runtime, @transform, object))
       rescue *@catched_exception
         Datacaster.ErrorResult([@error])
       end

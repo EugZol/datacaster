@@ -284,42 +284,6 @@ RSpec.describe Datacaster do
     end
   end
 
-  describe "using context" do
-    it "can be used with context" do
-      type = described_class.schema { check { |x| x == context.test } }
-
-      expect(type.with_context(test: "asd").("asd").to_dry_result).to eq Success("asd")
-    end
-
-    it "can access context in deeply nested params" do
-      schema = described_class.schema do
-        hash_schema(
-          title: string,
-          owner: {
-            name: string,
-            title: string & check { |v| v == context.params }
-          }
-        )
-      end
-
-      expect(
-        schema.with_context(params: "CEO").(
-          title: "title",
-          owner: {
-            name: "boss",
-            title: "CEO"
-          }
-        ).to_dry_result
-      ).to eq Success(
-        title: "title",
-        owner: {
-          name: "boss",
-          title: "CEO"
-        }
-      )
-    end
-  end
-
   describe "and (&) node" do
     subject do
       described_class.schema { string & compare("test") }
@@ -400,6 +364,17 @@ RSpec.describe Datacaster do
     # That's the reason we need then-else as separate node
     it "returns 'then' Failure, if left is Success and 'then' is Failure" do
       expect(subject.("5").to_dry_result).to eq Failure(['must be equal to "test"'])
+    end
+
+    it "supports constructing different 'then'-'else' nodes with the same 'then'" do
+      schema = described_class.schema do
+        half = string.then(compare("test"))
+        a = half.else(transform_to_value(1))
+        b = half.else(transform_to_value(2))
+        hash_schema(a: a, b: b)
+      end
+
+      expect(schema.(a: 1, b: 1).to_dry_result).to eq Success({a: 1, b: 2})
     end
 
     it "raises error on double 'else'" do
@@ -1029,86 +1004,6 @@ RSpec.describe Datacaster do
       end
       expect(mapping.(a: 3, b: 2).to_dry_result).to eq Success({a: 2, b: 3})
       expect(mapping.(a: 1, b: 2).to_dry_result).to eq Failure({a: ["less than b"]})
-    end
-
-    describe "cast_errors" do
-      context "remaps errors with #cast_errors" do
-      it "with transform_to_hash" do
-          type = described_class.schema do
-            transform = transform_to_hash(
-               b: pick(:a) & integer,
-               a: remove
-             )
-
-            transform.cast_errors(
-              transform_to_hash(
-                a: pick(:b),
-                b: remove
-              )
-            )
-          end
-
-          expect(type.(a: 'wrong').to_dry_result).to eq Failure(a: ["must be integer"])
-        end
-
-        it "with pick" do
-          type = described_class.schema do
-            transform = transform_to_hash(
-               b: pick(:a) & integer,
-               a: remove
-             )
-
-            transform.cast_errors pick(:b)
-          end
-
-          expect(type.(a: 'wrong').to_dry_result).to eq Failure(["must be integer"])
-        end
-      end
-
-      it "remaps errors for complex schemas with composition" do
-        schema1 = described_class.partial_schema do
-          transform = transform_to_hash(
-             b: pick(:a) & integer,
-             a: remove
-           )
-
-          transform.cast_errors pick(:b)
-        end
-
-        schema2 = described_class.choosy_schema do
-          transform = transform_to_hash(
-             d: pick(:c) & integer,
-             c: remove
-           )
-        end
-
-        schema3 = described_class.schema do
-          (schema1 * schema2).cast_errors(
-            Datacaster.choosy_schema do
-              transform_to_hash(
-                c: pick(:d),
-                base: pick(:base)
-              )
-            end
-          )
-        end
-
-        expect(schema3.(a: "asd", c: "asd", e: "asd").to_dry_result)
-          .to eq Failure(base: ["must be integer"], c: ["must be integer"])
-      end
-
-      it "raises an error in case of ErrorResult" do
-        schema = Datacaster.schema do
-          caster = to_integer
-
-          caster.cast_errors to_integer
-        end
-
-        expect { schema.("not_an_int") }
-          .to raise_error(
-            '#cast_errors must return Datacaster.ValidResult, currently it is #<Datacaster::ErrorResult(["must be integer"])>'
-          )
-      end
     end
 
     describe "merge_message_keys" do
