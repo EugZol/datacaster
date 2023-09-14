@@ -41,6 +41,10 @@ module Datacaster
       AndWithErrorAggregationNode.new(self, other)
     end
 
+    def cast_errors(error_caster)
+      ContextNodes::ErrorsCaster.new(self, error_caster)
+    end
+
     def then(other)
       ThenNode.new(self, other)
     end

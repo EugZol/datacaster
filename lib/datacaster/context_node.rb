@@ -33,11 +33,11 @@ module Datacaster
     end
 
     def transform_success(value)
-      Datacaster.ValidResult(value)
+      value
     end
 
     def transform_errors(errors)
-      Datacaster.ErrorResult(errors)
+      errors
     end
   end
 end

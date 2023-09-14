@@ -1,15 +1,15 @@
 module Datacaster
   class ThenNode < Base
-    def initialize(left, then_caster)
+    def initialize(left, then_caster, else_caster = nil)
       @left = left
       @then = then_caster
+      @else = else_caster
     end
 
     def else(else_caster)
       raise ArgumentError.new("Datacaster: double else clause is not permitted") if @else
 
-      @else = else_caster
-      self
+      self.class.new(@left, @then, else_caster)
     end
 
     def cast(object, runtime:)
