@@ -45,6 +45,13 @@ module Datacaster
       ThenNode.new(self, other)
     end
 
+    def with_context(context)
+      unless context.is_a?(Hash)
+        raise "with_context expected Hash as argument, got #{context.inspect} instead"
+      end
+      ContextNodes::UserContext.new(self, context)
+    end
+
     def call(object)
       call_with_runtime(object, Runtime.new)
     end

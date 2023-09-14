@@ -34,7 +34,6 @@ module Datacaster
       end
 
       def cast_value(result, schema)
-       # puts "DEBUG! cast value result: #{result.inspect}, schema: #{schema.inspect}"
         return result if schema == true
 
         case result.value!

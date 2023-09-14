@@ -13,7 +13,10 @@ module Datacaster
       # Array checked schema are the same as hash one, where
       # instead of keys there are array indicies
       def checked_key!(key)
-        return if @ignore
+        if @ignore
+          return yield if block_given?
+          return
+        end
 
         @pointer_stack.last[key] ||= {}
         @pointer_stack.push(@pointer_stack.last[key])

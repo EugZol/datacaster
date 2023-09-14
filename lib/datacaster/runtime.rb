@@ -4,13 +4,22 @@ module Datacaster
       r.instance_exec(*args, &proc)
     end
 
+    def self.send_to_parent(r, m, *args, &block)
+      parent = r.instance_variable_get(:@parent)
+      not_found!(m) if parent.nil?
+      call(parent, -> { public_send(m, *args, &block) })
+    end
+
+    def self.not_found!(m)
+      raise NoMethodError.new("Method #{m.inspect} is not available in current runtime context")
+    end
+
     def initialize(parent = nil)
       @parent = parent
     end
 
-    def method_missing(m, *args)
-      return self.class.call(@parent, -> { public_send(m, *args) }) unless @parent.nil?
-      raise RuntimeError.new("Method #{m.inspect} is not available in current runtime context")
+    def method_missing(m, *args, &block)
+      self.class.send_to_parent(self, m, *args, &block)
     end
 
     def inspect

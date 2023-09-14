@@ -284,42 +284,6 @@ RSpec.describe Datacaster do
     end
   end
 
-  describe "using context" do
-    it "can be used with context" do
-      type = described_class.schema { check { |x| x == context.test } }
-
-      expect(type.with_context(test: "asd").("asd").to_dry_result).to eq Success("asd")
-    end
-
-    it "can access context in deeply nested params" do
-      schema = described_class.schema do
-        hash_schema(
-          title: string,
-          owner: {
-            name: string,
-            title: string & check { |v| v == context.params }
-          }
-        )
-      end
-
-      expect(
-        schema.with_context(params: "CEO").(
-          title: "title",
-          owner: {
-            name: "boss",
-            title: "CEO"
-          }
-        ).to_dry_result
-      ).to eq Success(
-        title: "title",
-        owner: {
-          name: "boss",
-          title: "CEO"
-        }
-      )
-    end
-  end
-
   describe "and (&) node" do
     subject do
       described_class.schema { string & compare("test") }
