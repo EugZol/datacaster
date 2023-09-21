@@ -1,9 +1,8 @@
 module Datacaster
   class Caster < Base
-    def initialize(name, &block)
+    def initialize(&block)
       raise "Expected block" unless block_given?
 
-      @name = name
       @cast = block
     end
 
@@ -21,7 +20,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::#{@name}Caster>"
+      "#<Datacaster::Caster>"
     end
   end
 end

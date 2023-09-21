@@ -24,7 +24,7 @@ module Datacaster
 
         # transform_to_hash([:a, :b, :c] => pick(:a, :b, :c) & ...)
         if key.is_a?(Array)
-          unwrapped = new_value.valid? ? new_value.value : new_value.errors
+          unwrapped = new_value.valid? ? new_value.value : new_value.raw_errors
 
           if key.length != unwrapped.length
             raise TypeError.new("When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
@@ -45,9 +45,9 @@ module Datacaster
           end
         else
           if key.is_a?(Array)
-            errors = self.class.merge_errors(errors, key.zip(new_value.errors).to_h)
+            errors = self.class.merge_errors(errors, key.zip(new_value.raw_errors).to_h)
           else
-            errors = self.class.merge_errors(errors, {key => new_value.errors})
+            errors = self.class.merge_errors(errors, {key => new_value.raw_errors})
           end
         end
       end

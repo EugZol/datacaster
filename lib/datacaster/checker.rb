@@ -1,10 +1,8 @@
 module Datacaster
   class Checker < Base
-    def initialize(name, error, &block)
+    def initialize(&block)
       raise "Expected block" unless block_given?
 
-      @name = name
-      @error = error
       @check = block
     end
 
@@ -12,12 +10,12 @@ module Datacaster
       if Runtime.(runtime, @check, object)
         Datacaster.ValidResult(object)
       else
-        Datacaster.ErrorResult([@error])
+        Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.check', 'datacaster.errors.check'], value: object))
       end
     end
 
     def inspect
-      "#<Datacaster::#{@name}Checker>"
+      "#<Datacaster::Checker>"
     end
   end
 end

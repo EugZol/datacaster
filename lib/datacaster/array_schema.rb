@@ -5,8 +5,8 @@ module Datacaster
     end
 
     def cast(array, runtime:)
-      return Datacaster.ErrorResult(["must be array"]) if !array.respond_to?(:map) || !array.respond_to?(:zip)
-      return Datacaster.ErrorResult(["must not be empty"]) if array.empty?
+      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.array', 'datacaster.errors.array'], value: array)) if !array.respond_to?(:map) || !array.respond_to?(:zip)
+      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.empty', 'datacaster.errors.empty'], value: array)) if array.empty?
 
       runtime.will_check!
 
@@ -20,7 +20,7 @@ module Datacaster
       if result.all?(&:valid?)
         Datacaster.ValidResult(result.map!(&:value))
       else
-        Datacaster.ErrorResult(result.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.errors] }.to_h)
+        Datacaster.ErrorResult(result.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.raw_errors] }.to_h)
       end
     end
 

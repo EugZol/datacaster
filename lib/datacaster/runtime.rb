@@ -22,6 +22,10 @@ module Datacaster
       self.class.send_to_parent(self, m, *args, &block)
     end
 
+    def respond_to_missing?(m, include_private = false)
+      !@parent.nil? && @parent.respond_to?(m, include_private)
+    end
+
     def inspect
       "#<#{self.class.name} parent: #{@parent.inspect}>"
     end

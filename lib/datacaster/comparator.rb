@@ -1,21 +1,21 @@
 module Datacaster
   class Comparator < Base
-    def initialize(value, name, error = nil)
+    def initialize(value)
       @value = value
-      @name = name
-      @error = error || "must be equal to #{value.inspect}"
     end
 
     def cast(object, runtime:)
       if @value == object
         Datacaster.ValidResult(object)
       else
-        Datacaster.ErrorResult([@error])
+        Datacaster.ErrorResult(
+          I18nValues::DefaultKeys.new(['.compare', 'datacaster.errors.compare'], reference: value, value: object)
+        )
       end
     end
 
     def inspect
-      "#<Datacaster::#{@name}Comparator>"
+      "#<Datacaster::Comparator>"
     end
   end
 end

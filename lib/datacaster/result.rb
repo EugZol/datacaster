@@ -6,6 +6,10 @@ module Datacaster
 
     def initialize(valid, value_or_errors)
       @value_or_errors = value_or_errors
+      unless @value_or_errors.is_a?(Hash) || @value_or_errors.is_a?(Array)
+        @value_or_errors = Array(@value_or_errors)
+      end
+
       @valid = !!valid
     end
 
@@ -22,10 +26,7 @@ module Datacaster
       value
     end
 
-    def errors
-      unless @value_or_errors.is_a?(Hash) || @value_or_errors.is_a?(Array)
-        @value_or_errors = Array(@value_or_errors)
-      end
+    def raw_errors
       @valid ? nil : @value_or_errors
     end
 

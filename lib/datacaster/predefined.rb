@@ -4,30 +4,30 @@ module Datacaster
 
     # Base types
 
-    def cast(name = 'Anonymous', &block)
-      Caster.new(name, &block)
+    def cast(&block)
+      Caster.new(&block)
     end
 
-    def check(name = 'Anonymous', error = 'is invalid', &block)
-      Checker.new(name, error, &block)
+    def check(&block)
+      Checker.new(&block)
     end
 
-    def compare(value, name = 'Anonymous', error = nil)
-      Comparator.new(value, name, error)
+    def compare(value)
+      Comparator.new(value)
     end
 
-    def transform(name = 'Anonymous', &block)
-      Transformer.new(name, &block)
+    def transform(&block)
+      Transformer.new(&block)
     end
 
-    def transform_if_present(name = 'Anonymous', &block)
+    def transform_if_present(&block)
       raise 'Expected block' unless block_given?
 
       Transformer.new(name) { |v| v == Datacaster.absent ? v : block.(v) }
     end
 
-    def try(name = 'Anonymous', error = 'is invalid', catched_exception:, &block)
-      Trier.new(name, error, catched_exception, &block)
+    def try(catched_exception:, &block)
+      Trier.new(catched_exception, &block).i18n_default_keys('.try', 'datacaster.errors.try')
     end
 
     def array_schema(element_caster)
@@ -46,34 +46,34 @@ module Datacaster
       HashMapper.new(fields.transform_values { |x| DefinitionDSL.expand(x) })
     end
 
-    def validate(active_model_validations, name = 'Anonymous')
-      Validator.new(active_model_validations, name)
+    def validate(active_model_validations)
+      Validator.new(active_model_validations)
     end
 
     # 'Meta' types
 
     def absent
-      check('Absent', 'must be absent') { |x| x == Datacaster.absent }
+      check { |x| x == Datacaster.absent }.i18n_default_keys('.absent', 'datacaster.errors.absent')
     end
 
     def any
-      check('Any', 'must be set') { |x| x != Datacaster.absent }
+      check { |x| x != Datacaster.absent }.i18n_default_keys('.absent', 'datacaster.errors.any')
     end
 
     def transform_to_value(value)
-      transform('ToValue') { value }
+      transform { value }
     end
 
     def remove
-      transform('Remove') { Datacaster.absent }
+      transform { Datacaster.absent }
     end
 
     def pass
-      transform('Pass', &:itself)
+      transform(&:itself)
     end
 
     def pick(*keys)
-      must_be(Enumerable) & transform("Picker") { |value|
+      must_be(Enumerable) & transform { |value|
         result =
           keys.map do |key|
             if value.respond_to?(:key?) && !value.key?(key)
@@ -94,11 +94,11 @@ module Datacaster
     end
 
     def responds_to(method)
-      check('RespondsTo', "must respond to #{method.inspect}") { |x| x.respond_to?(method) }
+      check { |x| x.respond_to?(method) }.i18n_default_keys('.responds_to', 'datacaster.errors.responds_to', reference: method.to_s)
     end
 
     def must_be(klass)
-      check('MustBe', "must be #{klass.inspect}") { |x| x.is_a?(klass) }
+      check { |x| x.is_a?(klass) }.i18n_default_keys('.must_be', 'datacaster.errors.must_be', reference: klass.name)
     end
 
     def optional(base)
@@ -108,80 +108,81 @@ module Datacaster
     # Strict types
 
     def decimal(digits = 8)
-      Trier.new('Decimal', 'must be decimal', [ArgumentError, TypeError]) do |x|
+      Trier.new([ArgumentError, TypeError]) do |x|
         # strictly validate format of string, BigDecimal() doesn't do that
         Float(x)
 
         BigDecimal(x, digits)
-      end
+      end.i18n_default_keys('.decimal', 'datacaster.errors.decimal')
     end
 
     def array
-      check('Array', 'must be array') { |x| x.is_a?(Array) }
+      check { |x| x.is_a?(Array) }.i18n_default_keys('.array', 'datacaster.errors.array')
     end
 
     def float
-      check('Float', 'must be float') {  |x| x.is_a?(Float) }
+      check { |x| x.is_a?(Float) }.i18n_default_keys('.float', 'datacaster.errors.float')
     end
 
-    # 'hash' is a bad method name, because it will overwrite built in Object#hash
+    # 'hash' would be a bad method name, because it would override built in Object#hash
     def hash_value
-      check('Hash', 'must be hash') { |x| x.is_a?(Hash) }
+      check { |x| x.is_a?(Hash) }.i18n_default_keys('.hash_value', 'datacaster.errors.hash_value')
     end
 
     def hash_with_symbolized_keys
-      hash_value & transform("SymbolizeKeys") { |x| x.symbolize_keys }
+      hash_value & transform { |x| x.symbolize_keys }
     end
 
     def integer
-      check('Integer', 'must be integer') { |x| x.is_a?(Integer) }
+      check { |x| x.is_a?(Integer) }.i18n_default_keys('.integer', 'datacaster.errors.integer')
     end
 
     def integer32
-      integer & check('FourBytes', 'out of range') { |x| x.abs <= 2_147_483_647 }
+      integer & check { |x| x.abs <= 2_147_483_647 }.i18n_default_keys('.integer32', 'datacaster.errors.integer32')
     end
 
     def string
-      check('String', 'must be string') { |x| x.is_a?(String) }
+      check { |x| x.is_a?(String) }.i18n_default_keys('.string', 'datacaster.errors.string')
     end
 
     def non_empty_string
-      string & check('NonEmptyString', 'must be present') { |x| !x.empty? }
+      string & check { |x| !x.empty? }.i18n_default_keys('.non_empty_string', 'datacaster.errors.non_empty_string')
     end
 
     # Form request types
 
     def iso8601
       string &
-        try('ISO8601', 'must be iso8601 string', catched_exception: [ArgumentError, TypeError]) { |x| DateTime.iso8601(x) }
+        try(catched_exception: [ArgumentError, TypeError]) { |x| DateTime.iso8601(x) }.
+        i18n_default_keys('.iso8601', 'datacaster.errors.iso8601')
     end
 
     def to_boolean
-      cast('ToBoolean') do |x|
+      cast do |x|
         if ['true', '1', true].include?(x)
           Datacaster.ValidResult(true)
         elsif ['false', '0', false].include?(x)
           Datacaster.ValidResult(false)
         else
-          Datacaster.ErrorResult(['must be boolean'])
+          Datacaster.ErrorResult(Datacaster::I18nValues::DefaultKeys.new(['.to_boolean', 'datacaster.errors.to_boolean'], value: x))
         end
       end
     end
 
     def to_float
-      Trier.new('ToFloat', 'must be float', [ArgumentError, TypeError]) do |x|
+      Trier.new([ArgumentError, TypeError]) do |x|
         Float(x)
-      end
+      end.i18n_default_keys('.to_float', 'datacaster.errors.to_float')
     end
 
     def to_integer
-      Trier.new('ToInteger', 'must be integer', [ArgumentError, TypeError]) do |x|
+      Trier.new([ArgumentError, TypeError]) do |x|
         Integer(x)
-      end
+      end.i18n_default_keys('.to_integer', 'datacaster.errors.to_integer')
     end
 
     def optional_param(base)
-      transform_if_present("optional_param(#{base.inspect})") { |x| x == '' ? Datacaster::Absent.instance : x } & (absent | base)
+      transform_if_present { |x| x == '' ? Datacaster::Absent.instance : x } & (absent | base)
     end
   end
 end

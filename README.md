@@ -63,6 +63,7 @@ Its main use is in the validation and preliminary transformation of API params r
   - [Shortcut nested definitions](#shortcut-nested-definitions)
   - [Mapping hashes: `transform_to_hash`](#mapping-hashes-transform_to_hash)
 - [Error remapping](#error-remapping)
+- [Internationalization (i18n) (DRAFT)](#internationalization-i18n-draft)
 - [Registering custom 'predefined' types](#registering-custom-predefined-types)
 - [Contributing](#contributing)
 - [Ideas/TODO](#ideastodo)
@@ -1226,6 +1227,69 @@ schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:user_id=>["must be i
 
 Any instance of `Datacaster` can be passed to `.cast_errors`.
 
+## Internationalization (i18n) (DRAFT)
+
+```yml
+en:
+  datacaster:
+    integer: must be an integer
+    # ...
+
+  person_or_entity:
+    hash_value: must be a hash
+    kind: "%{value} is an invalid kind, should be 'person' or 'entity'"
+    name:
+      string: should be a string
+      format: "should only contain lowercase letters, invalid characters: %{invalid_characters}"
+
+  finance:
+    revenue: should look like a number
+```
+
+```ruby
+person_or_entity =
+  Datacaster.schema do
+    kind_is_valid = hash_schema(
+      kind: check { |x| %i[person entity].include?(x) }
+    )
+
+    name_format =
+      check do |x|
+        invalid = x.chars.reject { |x| x =~ /[a-z]/ }
+        i18n_var!(:invalid_characters, invalid.join(', '))
+        invalid == []
+      end
+
+    name = string.i18n_scope('.string') & name_format.i18n_scope('.format')
+    person = hash_schema(name: name.i18n_scope('.name'), salary: integer)
+
+    entity = hash_schema(title: string, form: string, revenue: integer)
+
+    result = kind_is_valid & hash_schema(kind: compare(:person)).then(person).else(entity)
+
+    result.i18n_scope('person_or_entity') # or arg to schema: Datacaster.schema(i18n_scope: 'person_or_entity')
+  end
+
+person_or_entity.(
+  kind: 'something'
+).errors # {kind: "something is an invalid kind, should be 'person' or 'entity'"}
+
+person_or_entity.(
+  kind: 'person',
+  name: 123
+).errors # {name: 'should be a string'}
+
+person_or_entity.(
+  kind: 'person',
+  name: 'john!'
+).errors # {name: 'should only contain lowercase letters, invalid characters: !'}
+
+person_or_entity.(
+  kind: 'person',
+  name: 'john',
+  salary: 'not integer'
+).errors # {salary: 'must be an integer'}
+```
 
 ## Registering custom 'predefined' types
 

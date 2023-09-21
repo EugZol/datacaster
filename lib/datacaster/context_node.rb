@@ -11,7 +11,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::ContextNode base: #{@base.inspect}>"
+      "#<#{self.class.name} base: #{@base.inspect}>"
     end
 
     private
@@ -28,7 +28,7 @@ module Datacaster
       if result.valid?
         Datacaster.ValidResult(transform_success(result.value))
       else
-        Datacaster.ErrorResult(transform_errors(result.errors))
+        Datacaster.ErrorResult(transform_errors(result.raw_errors))
       end
     end
 

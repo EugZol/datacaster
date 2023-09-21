@@ -5,7 +5,7 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      return Datacaster.ErrorResult(["must be hash"]) unless object.is_a?(Hash)
+      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.hash_value', 'datacaster.errors.hash_value'], value: object)) unless object.is_a?(Hash)
 
       runtime.will_check!
 
@@ -24,7 +24,7 @@ module Datacaster
         if new_value.valid?
           result[key] = new_value.value
         else
-          errors[key] = new_value.errors
+          errors[key] = new_value.raw_errors
         end
       end
 
