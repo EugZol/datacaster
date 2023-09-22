@@ -1,6 +1,15 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
+  before(:all) do
+    @i18n_module = Datacaster::Config.i18n_module
+    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
+  end
+
+  after(:all) do
+    Datacaster::Config.i18n_module = @i18n_module
+  end
+
   describe "using context node (#with_context)" do
     it "allows to access context.something in runtime" do
       type = described_class.schema { check { |x| x == context.test } }

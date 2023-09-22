@@ -6,7 +6,7 @@ module Datacaster
 
     def initialize(valid, value_or_errors)
       @value_or_errors = value_or_errors
-      unless @value_or_errors.is_a?(Hash) || @value_or_errors.is_a?(Array)
+      if !valid && !@value_or_errors.is_a?(Hash) && !@value_or_errors.is_a?(Array)
         @value_or_errors = Array(@value_or_errors)
       end
 
@@ -43,7 +43,7 @@ module Datacaster
     end
 
     def to_dry_result
-      @valid ? Success(@value_or_errors) : Failure(@value_or_errors)
+      @valid ? Success(@value_or_errors) : Failure(errors)
     end
 
     private

@@ -1,5 +1,3 @@
-require 'active_model'
-
 module Datacaster
   class Validator < Base
     @@validations = {}
@@ -21,8 +19,12 @@ module Datacaster
         end.new
     end
 
-    def initialize(validations, name)
-      @name = name
+    def initialize(validations)
+      require 'active_model'
+
+      if Config.i18n_module == SubstituteI18n
+        raise NotImplementedError, "Using ActiveModel validations requires ruby-i18n or another i18n gem instead of datacaster's built-in", caller
+      end
       @validator = self.class.create_active_model(validations)
     end
 
@@ -32,7 +34,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::#{@name}Validator>"
+      "#<Datacaster::Validator>"
     end
   end
 end

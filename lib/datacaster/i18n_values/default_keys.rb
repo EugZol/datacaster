@@ -15,7 +15,11 @@ module Datacaster
       end
 
       def resolve
-        key = @keys.find(&Config.i18n_exists?) || @keys.first
+        keys = @keys.select { |x| x[0] != '.' }
+        if keys.empty?
+          raise RuntimeError.new("No absolute keys among #{@keys.inspect}. Use #i18n_key or #i18n_default_keys in addition to #i18n_scope.")
+        end
+        key = keys.find(&Config.i18n_exists?) || keys.first
         Config.i18n_t.(key, **@args)
       end
 

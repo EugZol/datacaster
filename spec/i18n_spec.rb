@@ -6,9 +6,12 @@ RSpec.describe Datacaster do
   Scope = Datacaster::I18nValues::Scope
 
   before(:all) do
-    require 'i18n'
-    Datacaster::Config.i18n_initialize!
-    I18n.load_path += [__dir__ + '/fixtures/locales.yml']
+    @i18n_module = Datacaster::Config.i18n_module
+    Datacaster::Config.i18n_module = I18n
+  end
+
+  after(:all) do
+    Datacaster::Config.i18n_module = @i18n_module
   end
 
   describe 'i18n' do

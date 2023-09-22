@@ -7,7 +7,7 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      if Runtime.(runtime, @check, object)
+      if Runtimes::Base.(runtime, @check, object)
         Datacaster.ValidResult(object)
       else
         Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.check', 'datacaster.errors.check'], value: object))

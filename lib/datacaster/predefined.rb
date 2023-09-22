@@ -23,7 +23,7 @@ module Datacaster
     def transform_if_present(&block)
       raise 'Expected block' unless block_given?
 
-      Transformer.new(name) { |v| v == Datacaster.absent ? v : block.(v) }
+      Transformer.new { |v| v == Datacaster.absent ? v : block.(v) }
     end
 
     def try(catched_exception:, &block)
@@ -57,7 +57,7 @@ module Datacaster
     end
 
     def any
-      check { |x| x != Datacaster.absent }.i18n_default_keys('.absent', 'datacaster.errors.any')
+      check { |x| x != Datacaster.absent }.i18n_default_keys('.any', 'datacaster.errors.any')
     end
 
     def transform_to_value(value)

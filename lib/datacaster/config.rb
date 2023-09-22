@@ -4,6 +4,7 @@ module Datacaster
 
     attr_accessor :i18n_t
     attr_accessor :i18n_exists
+    attr_accessor :i18n_module
 
     def add_predefined_caster(name, definition)
       caster =
@@ -20,15 +21,27 @@ module Datacaster
     end
 
     def i18n_t
-      @i18n_t || ->(*args, **kwargs) { I18n.t(*args, **kwargs) }
+      if @i18n_t.nil? && @i18n_module.nil?
+        raise RuntimeError, "call Datacaster::Config.i18n_initialize! before defining schemas"
+      end
+      @i18n_t || ->(*args, **kwargs) { @i18n_module.t(*args, **kwargs) }
     end
 
     def i18n_exists?
-      @i18n_exists || ->(*args, **kwargs) { I18n.exists?(*args, **kwargs) }
+      if @i18n_t.nil? && @i18n_module.nil?
+        raise RuntimeError, "call Datacaster::Config.i18n_initialize! before defining schemas"
+      end
+      @i18n_exists || ->(*args, **kwargs) { @i18n_module.exists?(*args, **kwargs) }
     end
 
     def i18n_initialize!
-      I18n.load_path += [__dir__ + '/../../config/locales/en.yml']
+      @i18n_module ||=
+        if defined?(::I18n)
+          I18n
+        else
+          SubstituteI18n
+        end
+      @i18n_module.load_path += [__dir__ + '/../../config/locales/en.yml']
     end
   end
 end

@@ -9,7 +9,7 @@ module Datacaster
         Datacaster.ValidResult(object)
       else
         Datacaster.ErrorResult(
-          I18nValues::DefaultKeys.new(['.compare', 'datacaster.errors.compare'], reference: value, value: object)
+          I18nValues::DefaultKeys.new(['.compare', 'datacaster.errors.compare'], reference: @value.inspect, value: object)
         )
       end
     end

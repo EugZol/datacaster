@@ -1,6 +1,15 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
+  before(:all) do
+    @i18n_module = Datacaster::Config.i18n_module
+    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
+  end
+
+  after(:all) do
+    Datacaster::Config.i18n_module = @i18n_module
+  end
+
   describe "cast_errors" do
     context "remaps errors with #cast_errors" do
       it "with transform_to_hash" do
@@ -18,7 +27,7 @@ RSpec.describe Datacaster do
           )
         end
 
-        expect(type.(a: 'wrong').to_dry_result).to eq Failure(a: ["must be integer"])
+        expect(type.(a: 'wrong').to_dry_result).to eq Failure(a: ["is not an integer"])
       end
 
       it "with pick" do
@@ -31,7 +40,7 @@ RSpec.describe Datacaster do
           transform.cast_errors pick(:b)
         end
 
-        expect(type.(a: 'wrong').to_dry_result).to eq Failure(["must be integer"])
+        expect(type.(a: 'wrong').to_dry_result).to eq Failure(["is not an integer"])
       end
     end
 
@@ -64,7 +73,7 @@ RSpec.describe Datacaster do
       end
 
       expect(schema3.(a: "asd", c: "asd", e: "asd").to_dry_result)
-        .to eq Failure(base: ["must be integer"], c: ["must be integer"])
+        .to eq Failure(base: ["is not an integer"], c: ["is not an integer"])
     end
 
     it "raises an error in case of ErrorResult" do

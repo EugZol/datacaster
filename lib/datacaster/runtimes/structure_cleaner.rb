@@ -1,6 +1,6 @@
 module Datacaster
   module Runtimes
-    class StructureCleaner < Datacaster::Runtime
+    class StructureCleaner < Base
       attr_reader :checked_schema
 
       def initialize(*)

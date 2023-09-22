@@ -57,7 +57,7 @@ module Datacaster
     end
 
     def call(object)
-      call_with_runtime(object, Runtime.new)
+      call_with_runtime(object, Runtimes::Base.new)
     end
 
     def call_with_runtime(object, runtime)

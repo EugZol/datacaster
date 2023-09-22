@@ -2,11 +2,11 @@ require 'ostruct'
 
 module Datacaster
   module Runtimes
-    class UserContext < Datacaster::Runtime
+    class UserContext < Base
       class ContextStruct
-        def initialize(parent, user_context)
-          super(parent)
-          @context_struct = ContextStruct.new(user_context, self)
+        def initialize(context, node)
+          @context = context
+          @node = node
         end
 
         def method_missing(m, *args)
@@ -24,6 +24,11 @@ module Datacaster
             raise NoMethodError.new("Key #{m.inspect} is not found in the context")
           end
         end
+      end
+
+      def initialize(parent, user_context)
+        super(parent)
+        @context_struct = ContextStruct.new(user_context, self)
       end
 
       def context

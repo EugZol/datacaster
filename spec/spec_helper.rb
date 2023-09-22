@@ -17,4 +17,14 @@ RSpec.configure do |config|
     range = Integer(range_start)..Integer(range_stop)
     config.filter_run_including(line_number: ->(line_number) { range.include?(line_number) })
   end
+
+  config.before(:suite) do
+    # some tests user ruby-i18n, some SubstituteI18n
+    require 'i18n'
+    I18n.load_path += [__dir__ + '/../config/locales/en.yml']
+    I18n.load_path += [__dir__ + '/fixtures/locales.yml']
+
+    Datacaster::SubstituteI18n.load_path += [__dir__ + '/../config/locales/en.yml']
+    Datacaster::SubstituteI18n.load_path += [__dir__ + '/fixtures/locales.yml']
+  end
 end

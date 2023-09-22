@@ -1,6 +1,6 @@
 module Datacaster
   module Runtimes
-    class I18n < Datacaster::Runtime
+    class I18n < Base
       attr_reader :args
 
       def initialize(*)
