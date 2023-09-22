@@ -28,7 +28,7 @@ module Datacaster
       end
 
       def inspect
-        "#<#{self.class.name}(#{@keys.join(', ')}) #{@args.inspect}>"
+        "#<#{self.class.name}(#{@keys.to_a.join(', ')}) #{@args.inspect}>"
       end
     end
   end
