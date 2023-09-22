@@ -12,6 +12,14 @@ module Datacaster
         super && @key == other.key
       end
 
+      def resolve
+        Config.i18n_t.(@key, **@args)
+      end
+
+      def with_args(args)
+        self.class.new(@key, @args.merge(args))
+      end
+
       def inspect
         "#<#{self.class.name}(#{@key.inspect}) #{@args.inspect}>"
       end

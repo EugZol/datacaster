@@ -8,8 +8,12 @@ module Datacaster
 
       private
 
+      def create_runtime(parent)
+        Runtimes::I18n.new(parent)
+      end
+
       def transform_errors(errors)
-        @i18n_value * errors
+        @i18n_value.with_args(runtime.args) * errors
       end
     end
   end

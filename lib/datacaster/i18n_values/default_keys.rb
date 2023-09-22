@@ -11,7 +11,16 @@ module Datacaster
       end
 
       def ==(other)
-        super && @keys = other.keys
+        super && @keys == other.keys
+      end
+
+      def resolve
+        key = @keys.find(&Config.i18n_exists?) || @keys.first
+        Config.i18n_t.(key, **@args)
+      end
+
+      def with_args(args)
+        self.class.new(@keys, @args.merge(args))
       end
 
       def inspect

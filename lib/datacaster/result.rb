@@ -30,6 +30,10 @@ module Datacaster
       @valid ? nil : @value_or_errors
     end
 
+    def errors
+      @errors ||= @valid ? nil : resolve_i18n(raw_errors)
+    end
+
     def inspect
       if @valid
         "#<Datacaster::ValidResult(#{@value_or_errors.inspect})>"
@@ -40,6 +44,21 @@ module Datacaster
 
     def to_dry_result
       @valid ? Success(@value_or_errors) : Failure(@value_or_errors)
+    end
+
+    private
+
+    def resolve_i18n(o)
+      case o
+      when Array
+        o.map { |x| resolve_i18n(x) }
+      when Hash
+        o.transform_values { |x| resolve_i18n(x) }
+      when I18nValues::Base
+        o.resolve
+      else
+        o
+      end
     end
   end
 
