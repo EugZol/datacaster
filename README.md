@@ -63,7 +63,7 @@ Its main use is in the validation and preliminary transformation of API params r
   - [Shortcut nested definitions](#shortcut-nested-definitions)
   - [Mapping hashes: `transform_to_hash`](#mapping-hashes-transform_to_hash)
 - [Error remapping](#error-remapping)
-- [Internationalization (i18n) (DRAFT)](#internationalization-i18n-draft)
+- [Internationalization (i18n)](#internationalization-i18n)
 - [Registering custom 'predefined' types](#registering-custom-predefined-types)
 - [Contributing](#contributing)
 - [Ideas/TODO](#ideastodo)
@@ -109,10 +109,10 @@ validator.("test").valid? # true
 validator.("test").value  # "test"
 validator.("test").errors # nil
 
-validator.(1)             # Datacaster::ErrorResult(["must be string"])
+validator.(1)             # Datacaster::ErrorResult(["is not a string"])
 validator.(1).valid?      # false
 validator.(1).value       # nil
-validator.(1).errors      # ["must be string"]
+validator.(1).errors      # ["is not a string"]
 ```
 
 Datacaster instances are created with a call to `Datacaster.schema { ... }`, `Datacaster.partial_schema { ... }` or `Datacaster.choosy_schema { ... }` (described later in this file).
@@ -125,7 +125,7 @@ require 'datacaster'
 validator = Datacaster.schema { string }
 
 validator.("test").to_dry_result # Success("test")
-validator.(1).to_dry_result      # Failure(["must be string"])
+validator.(1).to_dry_result      # Failure(["is not a string"])
 ```
 
 `string` method call inside of the block in the examples above returns (with the help of some basic meta-programming magic) 'chainable' datacaster instance. To 'chain' datacaster instances 'logical AND' (`&`) operator is used:
@@ -136,7 +136,7 @@ require 'datacaster'
 validator = Datacaster.schema { string & check { |x| x.length > 5 } }
 
 validator.("test1") # Datacaster::ValidResult("test12")
-validator.(1)       # Datacaster::ErrorResult(["must be string"])
+validator.(1)       # Datacaster::ErrorResult(["is not a string"])
 validator.("test")  # Datacaster::ErrorResult(["is invalid"])
 ```
 
@@ -159,7 +159,22 @@ You can call `#valid?`, `#value`, `#errors` methods directly, or, if preferred, 
 
 `#value` and `#errors` would return `#nil` if the result is, correspondingly, `ErrorResult` and `ValidResult`. No methods would raise an error.
 
-Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Each element of the returned array shows a separate error (as a string), and each key of the returned hash corresponds to the key of the validated hash. More or less errors are similar to what you expect from `ActiveModel::Errors#to_hash`.
+Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Errors support internationalization (i18n) natively. Each element of the returned array shows a separate error as a special i18n value object, and each key of the returned hash corresponds to the key of the validated hash.
+
+In this README, instead of i18n values English strings are provided for brevity:
+
+```ruby
+array = Datacaster.schema { array }
+array.(nil)
+
+# In this README
+#=> Datacaster::ErrorResult(['should be an array'])
+
+# In reality
+#=> <Datacaster::ErrorResult([#<Datacaster::I18nValues::Key(.array, datacaster.errors.array) {:value=>nil}>])>
+```
+
+See [section on i18n](#internationalization-i18n) for details.
 
 ### Hash schema
 
@@ -185,19 +200,19 @@ person_validator.(name: "Jack Simon", salary: 50_000)
 # => Datacaster::ValidResult({:name=>"Jack Simon", :salary=>50000})
 
 person_validator.(name: "Jack Simon")
-# => Datacaster::ErrorResult({:salary=>["must be integer"]})
+# => Datacaster::ErrorResult({:salary=>["is not an integer"]})
 
 person_validator.("test")
-# => Datacaster::ErrorResult(["must be hash"])
+# => Datacaster::ErrorResult(["is not a hash"])
 
 person_validator.(name: "John Smith", salary: "1000")
-# => Datacaster::ErrorResult({:salary=>["must be integer"]})
+# => Datacaster::ErrorResult({:salary=>["is not an integer"]})
 
 person_validator.(name: :john, salary: "1000")
-# => Datacaster::ErrorResult({:name=>["must be string"], :salary=>["must be integer"]})
+# => Datacaster::ErrorResult({:name=>["is not a string"], :salary=>["is not an integer"]})
 
 person_validator.(name: "John Smith", salary: 100_000, title: "developer")
-# => Datacaster::ErrorResult({:title=>["must be absent"]})
+# => Datacaster::ErrorResult({:title=>["should be absent"]})
 ```
 
 `Datacaster.schema` definitions don't permit, as you likely noticed from the example above, extra fields in the hash. In fact, `Datacaster.schema` automatically adds special built-in validator, called `Datacaster::Terminator::Raising`, at the end of your validation chain, which function is to ensure that all hash keys had been validated.
@@ -257,7 +272,7 @@ even_number.(2)
 even_number.(3)
 # => Datacaster::ErrorResult(["is invalid"])
 even_number.("test")
-# => Datacaster::ErrorResult(["must be integer"])
+# => Datacaster::ErrorResult(["is not an integer"])
 ```
 
 If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation. See below in this file section on transformations where this might be relevant.
@@ -271,7 +286,7 @@ person_or_entity = Datacaster.schema { compare(:person) | compare(:entity) }
 person_or_entity.(:person) # => Datacaster::ValidResult(:person)
 person_or_entity.(:entity) # => Datacaster::ValidResult(:entity)
 
-person_or_entity.(:ngo)    # => Datacaster::ErrorResult(["must be equal to :entity"])
+person_or_entity.(:ngo)    # => Datacaster::ErrorResult(["does not equal :entity"])
 ```
 
 Notice that OR operator, if left-hand validation fails, passes the original value to the right-hand validation. As you see in the example above resultant error messages are not always convenient (i.e. to show something like "value must be :person or :entity" is preferable to showing somewhat misleading "must be equal to :entity"). See the next section on "IF... THEN... ELSE" for closer to the real world example.
@@ -404,7 +419,7 @@ Always returns ValidResult. The value is transformed to provided argument. Is us
 max_concurrent_connections = Datacaster.schema { compare(nil).then(transform_to_value(5)).else(integer) }
 
 max_concurrent_connections.(9)   # => Datacaster::ValidResult(9)
-max_concurrent_connections.("9") # => Datacaster::ErrorResult(["must be integer"])
+max_concurrent_connections.("9") # => Datacaster::ErrorResult(["is not an integer"])
 max_concurrent_connections.(nil) # => Datacaster::ValidResult(5)
 ```
 
@@ -443,7 +458,7 @@ item_with_optional_price.(name: "Book")
 # => Datacaster::ValidResult({:name=>"Book"})
 
 item_with_optional_price.(name: "Book", price: "wrong")
-# => Datacaster::ErrorResult({:price=>["must be float"]})
+# => Datacaster::ErrorResult({:price=>["is not a float"]})
 ```
 
 #### `pick(key)`
@@ -462,7 +477,7 @@ pick_name = Datacaster.schema { pick(:name) }
 pick_name.(name: "George")       # => Datacaster::ValidResult("George")
 pick_name.(last_name: "Johnson") # => Datacaster::ValidResult(#<Datacaster.absent>)
 
-pick_name.("test")               # => Datacaster::ErrorResult(["must be Enumerable"])
+pick_name.("test")               # => Datacaster::ErrorResult(["is not Enumerable"])
 ```
 
 Alternative form could be used: `pick(*keys)`.
@@ -475,7 +490,7 @@ pick_name_and_age = Datacaster.schema { pick(:name, :age) }
 pick_name_and_age.(name: "George", age: 20)       # => Datacaster::ValidResult(["George", 20])
 pick_name_and_age.(last_name: "Johnson", age: 20) # => Datacaster::ValidResult([#<Datacaster.absent>, 20])
 
-pick_name_and_age.("test")                        # => Datacaster::ErrorResult(["must be Enumerable"])
+pick_name_and_age.("test")                        # => Datacaster::ErrorResult(["is not Enumerable"])
 ```
 
 #### `merge_message_keys(*keys)`
@@ -799,9 +814,9 @@ salaries = Datacaster.schema { array_of(integer) }
 
 salaries.([1000, 2000, 3000]) # Datacaster::ValidResult([1000, 2000, 3000])
 
-salaries.(["one thousand"])   # Datacaster::ErrorResult({0=>["must be integer"]})
-salaries.(:not_an_array)      # Datacaster::ErrorResult(["must be array"])
-salaries.([])                 # Datacaster::ErrorResult(["must not be empty"])
+salaries.(["one thousand"])   # Datacaster::ErrorResult({0=>["is not an integer"]})
+salaries.(:not_an_array)      # Datacaster::ErrorResult(["should be an array"])
+salaries.([])                 # Datacaster::ErrorResult(["should not be empty"])
 ```
 
 To allow empty array use the following construct: `compare([]) | array_of(...)`.
@@ -827,8 +842,8 @@ people.([person1, person2]) # => Datacaster::ValidResult([{...}, {...}])
 
 people.([{salary: 250_000.0}, {salary: "50000"}])
 # => Datacaster::ErrorResult({
-#   0 => {:name => ["must be string"]},
-#   1 => {:name => ["must be string"], :salary => ["must be float"]}
+#   0 => {:name => ["is not a string"]},
+#   1 => {:name => ["is not a string"], :salary => ["is not a float"]}
 # })
 ```
 
@@ -840,8 +855,8 @@ a) provided value implements basic array methods (`#map`, `#zip`),
 b) provided value is not `#empty?`,  
 c) each element of the provided value passes validation of `x`.
 
-If a) fails, `ErrorResult(["must be array"])` is returned.  
-If b) fails, `ErrorResult(["must not be empty"])` is returned.  
+If a) fails, `ErrorResult(["should be an array"])` is returned.  
+If b) fails, `ErrorResult(["should not be empty"])` is returned.  
 If c) fails, `ErrorResult({0 => ..., 1 => ...})` is returned. Wrapped hash contains keys which correspond to initial array's indices, and values correspond to failure returned from `x` validator, called for the corresponding element.
 
 Array schema transforms array if inner type (`x`) transforms element (in this case `array_schema` works more or less like `map` function). Otherwise, it doesn't transform.
@@ -865,7 +880,7 @@ person.(name: "John Smith", salary: 100_000)
 # => Datacaster::ValidResult({:name=>"John Smith", :salary=>100000})
 
 person.(name: "John Smith", salary: "100_000")
-# => Datacaster::ErrorResult({:salary=>["must be integer"]})
+# => Datacaster::ErrorResult({:salary=>["is not an integer"]})
 ```
 
 Formally, hash schema returns ValidResult if and only if:
@@ -874,9 +889,9 @@ a) provided value `is_a?(Hash)`,
 b) all values, fetched by keys mentioned in `hash_schema(...)` definition, pass corresponding validations,  
 c) after all checks (including logical operators), there are no unchecked keys in the hash.
 
-If a) fails, `ErrorResult(["must be hash"])` is returned.  
+If a) fails, `ErrorResult(["should be a hash"])` is returned.  
 if b) fails, `ErrorResult(key1 => [errors...], key2 => [errors...])` is returned. Each key of wrapped "error hash" corresponds to the key of validated hash, and each value of "error hash" contains array of errors, returned by the corresponding validator.  
-If b) fulfilled, then and only then validated hash is checked for extra keys. If they are found, `ErrorResult(extra_key_1 => ["must be absent"], ...)` is returned.
+If b) fulfilled, then and only then validated hash is checked for extra keys. If they are found, `ErrorResult(extra_key_1 => ["should be absent"], ...)` is returned.
 
 Technically, last part is implemented with special singleton validator, called `#<Datacaster::Terminator::Raising>`, which is automatically added to the validation chain (with the use of `&` operator) by `Datacaster.schema` method. Don't be scared if you see it in the output of `#inspect` method of your validators (e.g. in `irb`).
 
@@ -901,9 +916,9 @@ restricted_params.(username: "test")
 # => Datacaster::ValidResult({:username=>"test"})
 
 restricted_params.(username: "test", is_admin: true)
-# => Datacaster::ErrorResult({:is_admin=>["must be absent"]})
+# => Datacaster::ErrorResult({:is_admin=>["should be absent"]})
 restricted_params.(username: "test", is_admin: nil)
-# => Datacaster::ErrorResult({:is_admin=>["must be absent"]})
+# => Datacaster::ErrorResult({:is_admin=>["should be absent"]})
 ```
 
 More practical case is to include `absent` validator in logical expressions, e.g. `something: absent | string`. If `something` is set to `nil`, this validation will fail, which could be the desired (and hardly achieved by any other validation framework) behavior.
@@ -925,7 +940,7 @@ person.(name: "John Smith")
 # => Datacaster::ValidResult({:name=>"John Smith"})
 
 person.(name: "John Smith", dob: "invalid date")
-# => Datacaster::ErrorResult({:dob=>["must be iso8601 string"]})
+# => Datacaster::ErrorResult({:dob=>["is not a string with ISO-8601 date and time"]})
 ```
 
 Another use-case for `Datacaster.absent` is to directly set some key to that value. In that case, it will be removed from the resultant hash. The most convenient way to do that is to use `remove` type (described above in this file):
@@ -1029,7 +1044,7 @@ RecordValidator.(
   description: 'CEO',
   extra: :key
 )
-# => Datacaster::ErrorResult({:extra=>["must be absent"]})
+# => Datacaster::ErrorResult({:extra=>["should be absent"]})
 ```
 
 Note that only the usage of `Datacaster.partial_schema` instead of `Datacaster.schema` allowed us to compose several `hash_schema`s from different files (from different calls to Datacaster API).
@@ -1069,7 +1084,7 @@ This code will work as expected (i.e. `RecordValidator`, the "end" validator, wi
 
 ```ruby
 RecordValidator.(kind: 'person', name: 1)
-# => Datacaster::ErrorResult({:description=>["must be string"]})
+# => Datacaster::ErrorResult({:description=>["is not a string"]})
 ```
 
 It correctly returns `ErrorResult`, but it doesn't mention that in addition to `description` being wrongfully absent, `name` field is of wrong type (integer instead of string). That could be inconvenient where Datacaster is used, for example, as a params validator for an API service: end user of the API would need to repeatedly send requests, essentially "brute forcing" his way in through all the errors (fixing them one by one), instead of having the list of all errors in one iteration.
@@ -1083,7 +1098,7 @@ RecordValidator =
   end
 
 RecordValidator.(kind: 'person', name: 1)
-# => Datacaster::ErrorResult({:description=>["must be string"], :name=>["must be string"]})
+# => Datacaster::ErrorResult({:description=>["is not a string"], :name=>["is not a string"]})
 ```
 
 Note: "star" (`*`) has been chosen arbitrarily among available Ruby operators. It shouldn't be read as multiplication (and, in fact, in Ruby it is used not only as multiplication sign).
@@ -1198,8 +1213,8 @@ schema =
     )
   end
 
-schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:posts=>["must be integer"]})>
-# Instead of #<Datacaster::ErrorResult({:user_id=>["must be integer"]})>
+schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:posts=>["is not an integer"]})>
+# Instead of #<Datacaster::ErrorResult({:user_id=>["is not an integer"]})>
 ```
 
 `.cast_errors` can be used in such case:
@@ -1220,14 +1235,14 @@ schema =
     )
   end
 
-schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:user_id=>["must be integer"]})>
+schema.(user_id: 'wrong')  # => #<Datacaster::ErrorResult({:user_id=>["is not an integer"]})>
 ```
 
 `.cast_errors` will extract errors from the `ErrorResult` and provide them as hash value for the provided caster. If that caster returns `ErrorResult`, runtime exception is raised. If that caster returns `ValidResult`, it is packed back into `ErrorResult` and returned.
 
 Any instance of `Datacaster` can be passed to `.cast_errors`.
 
-## Internationalization (i18n) (DRAFT)
+## Internationalization (i18n)
 
 ```yml
 en:
