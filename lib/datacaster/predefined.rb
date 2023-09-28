@@ -9,11 +9,11 @@ module Datacaster
     end
 
     def check(error_key = nil, &block)
-      Checker.new(&block)
+      Checker.new(error_key, &block)
     end
 
     def compare(value, error_key = nil)
-      Comparator.new(value)
+      Comparator.new(value, error_key)
     end
 
     def transform(&block)
