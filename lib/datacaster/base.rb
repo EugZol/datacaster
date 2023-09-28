@@ -74,12 +74,8 @@ module Datacaster
       end
     end
 
-    def i18n_default_keys(*keys, **args)
-      ContextNodes::I18n.new(self, I18nValues::DefaultKeys.new(keys, args))
-    end
-
-    def i18n_key(key, **args)
-      ContextNodes::I18n.new(self, I18nValues::Key.new(key, args))
+    def i18n_key(*keys, **args)
+      ContextNodes::I18n.new(self, I18nValues::Key.new(keys, args))
     end
 
     def i18n_map_keys(mapping)
@@ -88,6 +84,10 @@ module Datacaster
 
     def i18n_scope(scope, **args)
       ContextNodes::I18n.new(self, I18nValues::Scope.new(scope, args))
+    end
+
+    def i18n_vars(vars)
+      ContextNodes::I18n.new(self, I18nValues::Scope.new(nil, vars))
     end
 
     def inspect

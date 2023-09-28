@@ -22,14 +22,14 @@ module Datacaster
 
     def i18n_t
       if @i18n_t.nil? && @i18n_module.nil?
-        raise RuntimeError, "call Datacaster::Config.i18n_initialize! before defining schemas"
+        i18n_initialize!
       end
       @i18n_t || ->(*args, **kwargs) { @i18n_module.t(*args, **kwargs) }
     end
 
     def i18n_exists?
       if @i18n_t.nil? && @i18n_module.nil?
-        raise RuntimeError, "call Datacaster::Config.i18n_initialize! before defining schemas"
+        i18n_initialize!
       end
       @i18n_exists || ->(*args, **kwargs) { @i18n_module.exists?(*args, **kwargs) }
     end

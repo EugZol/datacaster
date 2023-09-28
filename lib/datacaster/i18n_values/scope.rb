@@ -13,7 +13,7 @@ module Datacaster
       end
 
       def resolve
-        raise RuntimeError.new("Tried to resolve i18n scope #{@scope.inspect}. Use #i18n_key or #i18n_default_keys in addition to #i18n_scope.")
+        raise RuntimeError.new("Tried to resolve i18n scope #{@scope.inspect}. Use #i18n_key in addition to #i18n_scope.")
       end
 
       def with_args(args)

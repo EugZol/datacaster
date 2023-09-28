@@ -8,11 +8,11 @@ module Datacaster
       Caster.new(&block)
     end
 
-    def check(&block)
+    def check(error_key = nil, &block)
       Checker.new(&block)
     end
 
-    def compare(value)
+    def compare(value, error_key = nil)
       Comparator.new(value)
     end
 
@@ -26,20 +26,23 @@ module Datacaster
       Transformer.new { |v| v == Datacaster.absent ? v : block.(v) }
     end
 
-    def try(catched_exception:, &block)
-      Trier.new(catched_exception, &block).i18n_default_keys('.try', 'datacaster.errors.try')
+    def try(error_key = nil, catched_exception:, &block)
+      Trier.new(catched_exception, error_key, &block)
     end
 
-    def array_schema(element_caster)
-      ArraySchema.new(DefinitionDSL.expand(element_caster))
+    def array_schema(element_caster, error_keys = {})
+      ArraySchema.new(DefinitionDSL.expand(element_caster), error_keys)
     end
     alias_method :array_of, :array_schema
 
-    def hash_schema(fields)
+    def hash_schema(fields, error_key = nil)
       unless fields.is_a?(Hash)
         raise "Expected field definitions in a form of Hash for hash_schema, got #{fields.inspect} instead"
       end
-      DefinitionDSL.expand(fields)
+      HashSchema.new(
+        fields.transform_values { |f| DefinitionDSL.expand(f) },
+        error_key
+      )
     end
 
     def transform_to_hash(fields)
@@ -52,12 +55,16 @@ module Datacaster
 
     # 'Meta' types
 
-    def absent
-      check { |x| x == Datacaster.absent }.i18n_default_keys('.absent', 'datacaster.errors.absent')
+    def absent(error_key = nil)
+      error_keys = ['.absent', 'datacaster.errors.absent']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x == Datacaster.absent }.i18n_key(*error_keys)
     end
 
-    def any
-      check { |x| x != Datacaster.absent }.i18n_default_keys('.any', 'datacaster.errors.any')
+    def any(error_key = nil)
+      error_keys = ['.any', 'datacaster.errors.any']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x != Datacaster.absent }.i18n_key(*error_keys)
     end
 
     def transform_to_value(value)
@@ -93,12 +100,16 @@ module Datacaster
       MessageKeysMerger.new(keys)
     end
 
-    def responds_to(method)
-      check { |x| x.respond_to?(method) }.i18n_default_keys('.responds_to', 'datacaster.errors.responds_to', reference: method.to_s)
+    def responds_to(method, error_key = nil)
+      error_keys = ['.responds_to', 'datacaster.errors.responds_to']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.respond_to?(method) }.i18n_key(*error_keys, reference: method.to_s)
     end
 
-    def must_be(klass)
-      check { |x| x.is_a?(klass) }.i18n_default_keys('.must_be', 'datacaster.errors.must_be', reference: klass.name)
+    def must_be(klass, error_key = nil)
+      error_keys = ['.must_be', 'datacaster.errors.must_be']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(klass) }.i18n_key(*error_keys, reference: klass.name)
     end
 
     def optional(base)
@@ -107,78 +118,107 @@ module Datacaster
 
     # Strict types
 
-    def decimal(digits = 8)
+    def decimal(digits = 8, error_key = nil)
+      error_keys = ['.decimal', 'datacaster.errors.decimal']
+      error_keys.unshift(error_key) if error_key
+
       Trier.new([ArgumentError, TypeError]) do |x|
         # strictly validate format of string, BigDecimal() doesn't do that
         Float(x)
 
         BigDecimal(x, digits)
-      end.i18n_default_keys('.decimal', 'datacaster.errors.decimal')
+      end.i18n_key(*error_keys)
     end
 
-    def array
-      check { |x| x.is_a?(Array) }.i18n_default_keys('.array', 'datacaster.errors.array')
+    def array(error_key = nil)
+      error_keys = ['.array', 'datacaster.errors.array']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Array) }.i18n_key(*error_keys)
     end
 
-    def float
-      check { |x| x.is_a?(Float) }.i18n_default_keys('.float', 'datacaster.errors.float')
+    def float(error_key = nil)
+      error_keys = ['.float', 'datacaster.errors.float']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Float) }.i18n_key(*error_keys)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
-    def hash_value
-      check { |x| x.is_a?(Hash) }.i18n_default_keys('.hash_value', 'datacaster.errors.hash_value')
+    def hash_value(error_key = nil)
+      error_keys = ['.hash_value', 'datacaster.errors.hash_value']
+      error_keys.unshift(error_key) if error_key
+      check(error_key) { |x| x.is_a?(Hash) }
     end
 
-    def hash_with_symbolized_keys
-      hash_value & transform { |x| x.symbolize_keys }
+    def hash_with_symbolized_keys(error_key = nil)
+      hash_value(error_key) & transform { |x| x.symbolize_keys }
     end
 
-    def integer
-      check { |x| x.is_a?(Integer) }.i18n_default_keys('.integer', 'datacaster.errors.integer')
+    def integer(error_key = nil)
+      error_keys = ['.integer', 'datacaster.errors.integer']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Integer) }.i18n_key(*error_keys)
     end
 
-    def integer32
-      integer & check { |x| x.abs <= 2_147_483_647 }.i18n_default_keys('.integer32', 'datacaster.errors.integer32')
+    def integer32(error_key = nil)
+      error_keys = ['.integer32', 'datacaster.errors.integer32']
+      error_keys.unshift(error_key) if error_key
+      integer & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
     end
 
-    def string
-      check { |x| x.is_a?(String) }.i18n_default_keys('.string', 'datacaster.errors.string')
+    def string(error_key = nil)
+      error_keys = ['.string', 'datacaster.errors.string']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(String) }.i18n_key(*error_keys)
     end
 
-    def non_empty_string
-      string & check { |x| !x.empty? }.i18n_default_keys('.non_empty_string', 'datacaster.errors.non_empty_string')
+    def non_empty_string(error_key = nil)
+      error_keys = ['.non_empty_string', 'datacaster.errors.non_empty_string']
+      error_keys.unshift(error_key) if error_key
+      string(error_key) & check { |x| !x.empty? }.i18n_key(*error_keys)
     end
 
     # Form request types
 
-    def iso8601
-      string &
+    def iso8601(error_key = nil)
+      error_keys = ['.iso8601', 'datacaster.errors.iso8601']
+      error_keys.unshift(error_key) if error_key
+
+      string(error_key) &
         try(catched_exception: [ArgumentError, TypeError]) { |x| DateTime.iso8601(x) }.
-        i18n_default_keys('.iso8601', 'datacaster.errors.iso8601')
+          i18n_key(*error_keys)
     end
 
-    def to_boolean
+    def to_boolean(error_key = nil)
+      error_keys = ['.to_boolean', 'datacaster.errors.to_boolean']
+      error_keys.unshift(error_key) if error_key
+
       cast do |x|
         if ['true', '1', true].include?(x)
           Datacaster.ValidResult(true)
         elsif ['false', '0', false].include?(x)
           Datacaster.ValidResult(false)
         else
-          Datacaster.ErrorResult(Datacaster::I18nValues::DefaultKeys.new(['.to_boolean', 'datacaster.errors.to_boolean'], value: x))
+          Datacaster.ErrorResult(Datacaster::I18nValues::Key.new(error_keys, value: x))
         end
       end
     end
 
-    def to_float
+    def to_float(error_key = nil)
+      error_keys = ['.to_float', 'datacaster.errors.to_float']
+      error_keys.unshift(error_key) if error_key
+
       Trier.new([ArgumentError, TypeError]) do |x|
         Float(x)
-      end.i18n_default_keys('.to_float', 'datacaster.errors.to_float')
+      end.i18n_key(*error_keys)
     end
 
-    def to_integer
+    def to_integer(error_key = nil)
+      error_keys = ['.to_integer', 'datacaster.errors.to_integer']
+      error_keys.unshift(error_key) if error_key
+
       Trier.new([ArgumentError, TypeError]) do |x|
         Integer(x)
-      end.i18n_default_keys('.to_integer', 'datacaster.errors.to_integer')
+      end.i18n_key(*error_keys)
     end
 
     def optional_param(base)

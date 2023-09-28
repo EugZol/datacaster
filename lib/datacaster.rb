@@ -8,16 +8,16 @@ require_relative 'datacaster/result'
 module Datacaster
   extend self
 
-  def schema(&block)
-    ContextNodes::StructureCleaner.new(build_schema(&block), :fail)
+  def schema(i18n_scope: nil, &block)
+    ContextNodes::StructureCleaner.new(build_schema(i18n_scope: i18n_scope, &block), :fail)
   end
 
-  def choosy_schema(&block)
-    ContextNodes::StructureCleaner.new(build_schema(&block), :remove)
+  def choosy_schema(i18n_scope: nil, &block)
+    ContextNodes::StructureCleaner.new(build_schema(i18n_scope: i18n_scope, &block), :remove)
   end
 
-  def partial_schema(&block)
-    ContextNodes::StructureCleaner.new(build_schema(&block), :pass)
+  def partial_schema(i18n_scope: nil, &block)
+    ContextNodes::StructureCleaner.new(build_schema(i18n_scope: i18n_scope, &block), :pass)
   end
 
   def absent
@@ -26,7 +26,7 @@ module Datacaster
 
   private
 
-  def build_schema(&block)
+  def build_schema(i18n_scope: nil, &block)
     raise "Expected block" unless block
 
     datacaster = DefinitionDSL.eval(&block)
@@ -34,6 +34,8 @@ module Datacaster
     unless datacaster.is_a?(Base)
       raise "Datacaster instance should be returned from a block (e.g. result of 'hash_schema(...)' call)"
     end
+
+    datacaster = datacaster.i18n_scope(i18n_scope) if i18n_scope
 
     datacaster
   end

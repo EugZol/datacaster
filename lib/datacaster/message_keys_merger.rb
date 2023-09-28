@@ -5,7 +5,7 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.hash_value', 'datacaster.errors.hash_value'], value: object)) unless object.is_a?(Hash)
+      return Datacaster.ErrorResult(I18nValues::Key.new(['.hash_value', 'datacaster.errors.hash_value'], value: object)) unless object.is_a?(Hash)
 
       result = set_initial_value(object)
 

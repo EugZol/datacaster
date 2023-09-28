@@ -1,12 +1,18 @@
 module Datacaster
   class ArraySchema < Base
-    def initialize(element_caster)
+    def initialize(element_caster, error_keys = {})
       @element_caster = element_caster
+
+      @not_array_error_keys = ['.array', 'datacaster.errors.array']
+      @not_array_error_keys.unshift(error_keys[:array]) if error_keys[:array]
+
+      @empty_error_keys = ['.empty', 'datacaster.errors.empty']
+      @error_keys.unshift(error_keys[:empty]) if error_keys[:empty]
     end
 
     def cast(array, runtime:)
-      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.array', 'datacaster.errors.array'], value: array)) if !array.respond_to?(:map) || !array.respond_to?(:zip)
-      return Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.empty', 'datacaster.errors.empty'], value: array)) if array.empty?
+      return Datacaster.ErrorResult(I18nValues::Key.new(@not_array_error_keys, value: array)) if !array.respond_to?(:map) || !array.respond_to?(:zip)
+      return Datacaster.ErrorResult(I18nValues::Key.new(@empty_error_keys, value: array)) if array.empty?
 
       runtime.will_check!
 

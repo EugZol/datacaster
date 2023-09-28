@@ -13,7 +13,7 @@ module Datacaster
         return errors unless errors.length == 1 && errors.is_a?(Array)
 
         error = errors.first
-        return errors unless error.is_a?(I18nValues::Key) || error.is_a?(I18nValues::DefaultKeys)
+        return errors unless error.is_a?(I18nValues::Key) || error.is_a?(I18nValues::Key)
 
         keys = error.respond_to?(:keys) ? error.keys : [error.key]
         key_to_remap = keys.find { |x| @from_keys.include?(x) }

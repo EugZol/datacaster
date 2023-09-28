@@ -1,7 +1,10 @@
 module Datacaster
   class Checker < Base
-    def initialize(&block)
+    def initialize(error_key = nil, &block)
       raise "Expected block" unless block_given?
+
+      @error_keys = ['.check', 'datacaster.errors.check']
+      @error_keys.unshift(error_key) if error_key
 
       @check = block
     end
@@ -10,7 +13,7 @@ module Datacaster
       if Runtimes::Base.(runtime, @check, object)
         Datacaster.ValidResult(object)
       else
-        Datacaster.ErrorResult(I18nValues::DefaultKeys.new(['.check', 'datacaster.errors.check'], value: object))
+        Datacaster.ErrorResult(I18nValues::Key.new(@error_keys, value: object))
       end
     end
 

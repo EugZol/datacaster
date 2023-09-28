@@ -3,9 +3,10 @@ module Datacaster
     class Base
       attr_reader :args
 
-      def *(other)
+      def *(other, additional_scope = [])
+        # To allow redefine array/hash errors with #i18n_key
         other = other.first if other.is_a?(Array) && other.length == 1
-        result = apply(other)
+        result = apply(other, additional_scope)
 
         result = [result] unless result.is_a?(Array) || result.is_a?(Hash)
         result
@@ -17,69 +18,69 @@ module Datacaster
 
       private
 
-      def apply(other)
+      def apply(other, additional_scope = [])
         if !other.is_a?(Base)
-          return apply_to_literal(other)
+          return apply_to_literal(other, additional_scope)
+        end
+
+        # Key(...) * Scope(...) -> error
+        if is_a?(Key) && !other.is_a?(Key)
+          raise RuntimeError.new("Can not apply #{inspect} to #{other.inspect}")
         end
 
         merged_args = other.args.merge(@args)
 
-        # DefaultKeys(['.relative', 'full.path']) * DefaultKeys(['.relative', 'full.path']) -> left
-        # DefaultKeys(['.relative', 'full.path']) * any -> error
-        if is_a?(DefaultKeys)
-          return DefaultKeys.new(@keys, merged_args) if other.is_a?(DefaultKeys)
-          raise RuntimeError.new("Can not apply #{inspect} to #{other.inspect}")
+        # Key(...) * Key(...) -> left
+        if is_a?(Key) && other.is_a?(Key)
+          return Key.new(@keys, merged_args)
         end
 
-        # Key(...) * DefaultKeys('full.path') -> left
-        # Scope(x) * DefaultKeys(['.relative', 'full_path']) = DefaultKeys(['x.relative', 'full_path'])
-        if other.is_a?(DefaultKeys)
-          return Key.new(@key, merged_args) if is_a?(Key)
-
+        # Scope('x') * Key(['.relative', 'full_path']) = Key(['x.relative', 'full_path'])
+        if is_a?(Scope) && other.is_a?(Key)
           scoped_keys =
-            other.keys.map do |x|
-              if x[0] == '.'
-                "#{@scope}#{x}"
-              else
-                x
+            other.keys.flat_map do |x|
+              next x if x[0] != '.'
+
+              keys = ["#{@scope}#{x}"]
+              next keys if x.count('.') > 1
+
+              accumulator = ""
+              additional_scope.each do |k|
+                accumulator << ".#{k}"
+                keys.unshift "#{@scope}#{accumulator}#{x}"
               end
+
+              keys
             end
-          return DefaultKeys.new(scoped_keys, merged_args)
-        end
-
-        # Key(...) * Key(...) -> error
-        # Key(...) * Scope(...) -> error
-        if is_a?(Key)
-          raise RuntimeError.new("Can not apply #{inspect} to #{other.inspect}")
-        end
-
-        # Scope(...) * Key('y') = Key('y')
-        # Scope('.x') * Key('.y') = Key('.x.y')
-        # Scope('x') * Key('.y') = Key('x.y')
-        if other.is_a?(Key)
-          return Key.new(other.key, merged_args) if other.key[0] != '.'
-          return Key.new("#{@scope}#{other.key}", merged_args)
+          return Key.new(scoped_keys, merged_args)
         end
 
         # Scope(...) * Scope(...) -> error
         raise RuntimeError.new("Can not apply #{inspect} to #{other.inspect}")
       end
 
-      def apply_to_literal(other)
+      def apply_to_literal(other, additional_scope = [])
         # Base * Other -> Other
         return other if !other.is_a?(Hash) && !other.is_a?(Array)
 
         # Key(...) * Array -> Array
-        # DefaultKeys(...) * Array -> Array
         # Key(...) * Hash -> Hash
-        # DefaultKeys(...) * Hash -> Hash
-        return other unless is_a?(Scope)
+        return other if is_a?(Key)
 
         # Scope(...) * Array -> map
-        return other.map { |x| self * x } if other.is_a?(Array)
+        return other.map { |x| self.*(x, additional_scope) } if other.is_a?(Array)
 
         # Scope(...) * Hash -> map values
-        other.transform_values { |x| self * x }
+        other.map do |(k, v)|
+          new_value =
+            case k
+            when String, Symbol
+              self.*(v, [*additional_scope, k])
+            else
+              self.*(v, [*additional_scope])
+            end
+          [k, new_value]
+        end.to_h
       end
     end
   end

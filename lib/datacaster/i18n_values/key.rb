@@ -1,30 +1,33 @@
 module Datacaster
   module I18nValues
     class Key < Base
-      attr_reader :key
+      attr_reader :keys
 
-      def initialize(key, args = {})
-        @key = key
+      def initialize(keys_or_key, args = {})
+        keys = Array(keys_or_key)
+        @keys = keys
         @args = args
       end
 
       def ==(other)
-        super && @key == other.key
+        super && @keys == other.keys
       end
 
       def resolve
-        if @key[0] == '.'
-          raise RuntimeError.new("Tried to resolve non-absolute key #{@key.inspect}. Use keys which don't start from the dot ('.') in one of related #i18n_key, #i18n_default_keys or #i18n_scope.")
+        keys = @keys.select { |x| x[0] != '.' }
+        if keys.empty?
+          raise RuntimeError.new("No absolute keys among #{@keys.inspect}. Use #i18n_key in addition to #i18n_scope.")
         end
-        Config.i18n_t.(@key, **@args)
+        key = keys.find(&Config.i18n_exists?) || keys.first
+        Config.i18n_t.(key, **@args)
       end
 
       def with_args(args)
-        self.class.new(@key, @args.merge(args))
+        self.class.new(@keys, @args.merge(args))
       end
 
       def inspect
-        "#<#{self.class.name}(#{@key.inspect}) #{@args.inspect}>"
+        "#<#{self.class.name}(#{@keys.inspect}) #{@args.inspect}>"
       end
     end
   end
