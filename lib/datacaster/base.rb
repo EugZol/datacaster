@@ -57,7 +57,7 @@ module Datacaster
     end
 
     def call(object)
-      call_with_runtime(object, Runtime.new)
+      call_with_runtime(object, Runtimes::Base.new)
     end
 
     def call_with_runtime(object, runtime)
@@ -72,6 +72,22 @@ module Datacaster
       ->(object) do
         call_with_runtime(object, runtime)
       end
+    end
+
+    def i18n_key(*keys, **args)
+      ContextNodes::I18n.new(self, I18nValues::Key.new(keys, args))
+    end
+
+    def i18n_map_keys(mapping)
+      ContextNodes::I18nKeysMapper.new(self, mapping)
+    end
+
+    def i18n_scope(scope, **args)
+      ContextNodes::I18n.new(self, I18nValues::Scope.new(scope, args))
+    end
+
+    def i18n_vars(vars)
+      ContextNodes::I18n.new(self, I18nValues::Scope.new(nil, vars))
     end
 
     def inspect

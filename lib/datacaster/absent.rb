@@ -12,6 +12,10 @@ module Datacaster
       "#<Datacaster.absent>"
     end
 
+    def to_s
+      ""
+    end
+
     def present?
       false
     end

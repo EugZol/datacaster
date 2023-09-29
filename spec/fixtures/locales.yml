@@ -1,0 +1,7 @@
+en:
+  namespace:
+    nested:
+      a: "namespace-nested-a, namespace %{namespace}, a1 %{a1}, a2 %{a2}, b2 %{b2}, value %{value}"
+  namespace2:
+    b:
+      check: "namespace2-b-check, namespace %{namespace}, b1 %{b1}, b2 %{b2}, value %{value}"

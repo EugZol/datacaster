@@ -31,7 +31,7 @@ module Datacaster
 
     def method_missing(m, *args)
       arg_string = args.empty? ? "" : "(#{args.map(&:inspect).join(', ')})"
-      raise "Datacaster: unknown definition '#{m}#{arg_string}'"
+      raise RuntimeError, "Datacaster: unknown definition '#{m}#{arg_string}'", caller
     end
   end
 end

@@ -1,0 +1,24 @@
+en:
+  datacaster:
+    errors:
+      absent: should be absent
+      any: should be present
+      array: should be an array
+      cast: is invalid
+      check: is invalid
+      compare: "does not equal %{reference}"
+      decimal: is not a decimal number
+      empty: should not be empty
+      float: is not a float
+      hash_value: is not a hash
+      integer: is not an integer
+      integer32: is not a 32-bit integer
+      iso8601: is not a string with ISO-8601 date and time
+      must_be: "is not %{reference}"
+      responds_to: "does not respond to %{reference}"
+      string: is not a string
+      to_boolean: does not look like a boolean
+      to_float: does not look like a float
+      to_integer: does not look like an integer
+      non_empty_string: should be non-empty string
+      try: raised an error

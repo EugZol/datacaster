@@ -62,7 +62,7 @@ module Datacaster
         if output.all?(&:valid?)
           Datacaster.ValidResult(output.map(&:value))
         else
-          Datacaster.ErrorResult(output.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.errors] }.to_h)
+          Datacaster.ErrorResult(output.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.raw_errors] }.to_h)
         end
       end
 
@@ -88,7 +88,7 @@ module Datacaster
           if nested_value.valid?
             output[k] = nested_value.value
           else
-            errors[k] = nested_value.errors
+            errors[k] = nested_value.raw_errors
           end
         end
 

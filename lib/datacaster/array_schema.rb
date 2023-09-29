@@ -1,12 +1,18 @@
 module Datacaster
   class ArraySchema < Base
-    def initialize(element_caster)
+    def initialize(element_caster, error_keys = {})
       @element_caster = element_caster
+
+      @not_array_error_keys = ['.array', 'datacaster.errors.array']
+      @not_array_error_keys.unshift(error_keys[:array]) if error_keys[:array]
+
+      @empty_error_keys = ['.empty', 'datacaster.errors.empty']
+      @error_keys.unshift(error_keys[:empty]) if error_keys[:empty]
     end
 
     def cast(array, runtime:)
-      return Datacaster.ErrorResult(["must be array"]) if !array.respond_to?(:map) || !array.respond_to?(:zip)
-      return Datacaster.ErrorResult(["must not be empty"]) if array.empty?
+      return Datacaster.ErrorResult(I18nValues::Key.new(@not_array_error_keys, value: array)) if !array.respond_to?(:map) || !array.respond_to?(:zip)
+      return Datacaster.ErrorResult(I18nValues::Key.new(@empty_error_keys, value: array)) if array.empty?
 
       runtime.will_check!
 
@@ -20,7 +26,7 @@ module Datacaster
       if result.all?(&:valid?)
         Datacaster.ValidResult(result.map!(&:value))
       else
-        Datacaster.ErrorResult(result.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.errors] }.to_h)
+        Datacaster.ErrorResult(result.each.with_index.reject { |x, _| x.valid? }.map { |x, i| [i, x.raw_errors] }.to_h)
       end
     end
 

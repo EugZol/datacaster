@@ -1,24 +1,25 @@
 module Datacaster
   class Trier < Base
-    def initialize(name, error, catched_exception, &block)
+    def initialize(catched_exception, error_key = nil, &block)
       raise "Expected block" unless block_given?
 
-      @name = name
-      @error = error
       @catched_exception = Array(catched_exception)
-      @transform = block
+      @try = block
+
+      @error_keys = ['.try', 'datacaster.errors.try']
+      @error_keys.unshift(error_key) if error_key
     end
 
     def cast(object, runtime:)
       begin
-        Datacaster.ValidResult(Runtime.(runtime, @transform, object))
+        Datacaster.ValidResult(Runtimes::Base.(runtime, @try, object))
       rescue *@catched_exception
-        Datacaster.ErrorResult([@error])
+        Datacaster.ErrorResult(I18nValues::Key.new(@error_keys, value: object))
       end
     end
 
     def inspect
-      "#<Datacaster::#{@name}Trier>"
+      "#<Datacaster::Trier>"
     end
   end
 end

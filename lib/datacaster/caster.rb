@@ -1,14 +1,13 @@
 module Datacaster
   class Caster < Base
-    def initialize(name, &block)
+    def initialize(&block)
       raise "Expected block" unless block_given?
 
-      @name = name
       @cast = block
     end
 
     def cast(object, runtime:)
-      result = Runtime.(runtime, @cast, object)
+      result = Runtimes::Base.(runtime, @cast, object)
 
       raise TypeError.new("Either Datacaster::Result or Dry::Monads::Result " \
         "should be returned from cast block") unless [Datacaster::Result, Dry::Monads::Result].any? { |k| result.is_a?(k) }
@@ -21,7 +20,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::#{@name}Caster>"
+      "#<Datacaster::Caster>"
     end
   end
 end

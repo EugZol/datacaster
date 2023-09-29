@@ -1,6 +1,15 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
+  before(:all) do
+    @i18n_module = Datacaster::Config.i18n_module
+    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
+  end
+
+  after(:all) do
+    Datacaster::Config.i18n_module = @i18n_module
+  end
+
   describe "any typecasting" do
     subject { described_class.schema { any } }
 
@@ -10,7 +19,37 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on Absent" do
-      expect(subject.(Datacaster.absent).to_dry_result).to eq Failure(["must be set"])
+      expect(subject.(Datacaster.absent).to_dry_result).to eq Failure(["should be present"])
+    end
+  end
+
+  describe "default typecasting" do
+    subject { described_class.schema { default(5) } }
+
+    it "passes anything" do
+      expect(subject.("test").to_dry_result).to eq Success("test")
+    end
+
+    it "transforms to default on absent" do
+      expect(subject.(Datacaster.absent).to_dry_result).to eq Success(5)
+    end
+
+    it "doesn't transform to default on nils" do
+      expect(subject.(nil).to_dry_result).to eq Success(nil)
+    end
+
+    it "transforms to default when :on points to method which returns truthfully" do
+      schema = described_class.schema { default(5, on: :nil?) }
+      expect(schema.(nil).to_dry_result).to eq Success(5)
+      expect(schema.(1).to_dry_result).to eq Success(1)
+      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
+    end
+
+    it "doesn't transform when value doesn't respond to method set in :on" do
+      schema = described_class.schema { default(5, on: :blabla) }
+      expect(schema.(nil).to_dry_result).to eq Success(nil)
+      expect(schema.(1).to_dry_result).to eq Success(1)
+      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
     end
   end
 
@@ -22,11 +61,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on integeres" do
-      expect(subject.(1).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "returns Failure on nils" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "passes empty strings" do
@@ -42,11 +81,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on integeres" do
-      expect(subject.(1).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "returns Failure on empty strings" do
-      expect(subject.("").to_dry_result).to eq Failure(["must be present"])
+      expect(subject.("").to_dry_result).to eq Failure(["should be non-empty string"])
     end
   end
 
@@ -62,7 +101,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on nils" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be decimal"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["is not a decimal number"])
     end
   end
 
@@ -74,11 +113,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on non-integers" do
-      expect(subject.("100").to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.("100").to_dry_result).to eq Failure(["is not an integer"])
     end
 
     it "returns Failure on too big integers" do
-      expect(subject.(2_147_483_648).to_dry_result).to eq Failure(["out of range"])
+      expect(subject.(2_147_483_648).to_dry_result).to eq Failure(["is not a 32-bit integer"])
     end
   end
 
@@ -90,11 +129,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on integeres" do
-      expect(subject.(1).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "returns Failure on nils" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "passes empty strings" do
@@ -117,11 +156,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns failure with integers" do
-      expect(subject.(1).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "returns failure with nils" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "treats empty string as absent (yields Absent)" do
@@ -136,7 +175,7 @@ RSpec.describe Datacaster do
       schema = described_class.partial_schema { hash_schema(title: optional_param(string)) }
 
       expect(schema.(title: "test").to_dry_result).to eq Success({title: "test"})
-      expect(schema.(title: nil).to_dry_result).to eq Failure({title: ["must be string"]})
+      expect(schema.(title: nil).to_dry_result).to eq Failure({title: ["is not a string"]})
       expect(schema.(test: 123).to_dry_result).to eq Success({test: 123})
       expect(schema.(test: 123, title: "").to_dry_result).to eq Success({test: 123})
     end
@@ -154,15 +193,15 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on nil" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["does not look like an integer"])
     end
 
     it "returns Failure on empty string" do
-      expect(subject.("").to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.("").to_dry_result).to eq Failure(["does not look like an integer"])
     end
 
     it "returns Failure when unable to coerce" do
-      expect(subject.("no number").to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.("no number").to_dry_result).to eq Failure(["does not look like an integer"])
     end
   end
 
@@ -178,15 +217,15 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on nil" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be float"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["does not look like a float"])
     end
 
     it "returns Failure on empty string" do
-      expect(subject.("").to_dry_result).to eq Failure(["must be float"])
+      expect(subject.("").to_dry_result).to eq Failure(["does not look like a float"])
     end
 
     it "returns Failure when unable to coerce" do
-      expect(subject.("no number").to_dry_result).to eq Failure(["must be float"])
+      expect(subject.("no number").to_dry_result).to eq Failure(["does not look like a float"])
     end
   end
 
@@ -207,11 +246,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure on nil" do
-      expect(subject.(nil).to_dry_result).to eq Failure(["must be boolean"])
+      expect(subject.(nil).to_dry_result).to eq Failure(["does not look like a boolean"])
     end
 
     it "returns Failure when unable to coerce" do
-      expect(subject.("not a boolean").to_dry_result).to eq Failure(["must be boolean"])
+      expect(subject.("not a boolean").to_dry_result).to eq Failure(["does not look like a boolean"])
     end
   end
 
@@ -223,7 +262,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns Failure when unable to coerce" do
-      expect(subject.("2019-03-01T12:70:20Z").to_dry_result).to eq Failure(["must be iso8601 string"])
+      expect(subject.("2019-03-01T12:70:20Z").to_dry_result).to eq Failure(["is not a string with ISO-8601 date and time"])
     end
   end
 
@@ -245,13 +284,13 @@ RSpec.describe Datacaster do
     it "fails on nils" do
       type = described_class.schema { hash_schema(a: integer, b: float) }
 
-      expect(type.(nil).to_dry_result).to eq Failure(["must be hash"])
+      expect(type.(nil).to_dry_result).to eq Failure(["is not a hash"])
     end
 
     it "fails on empty strings" do
       type = described_class.schema { hash_schema(a: to_integer, b: to_float) }
 
-      expect(type.("").to_dry_result).to eq Failure(["must be hash"])
+      expect(type.("").to_dry_result).to eq Failure(["is not a hash"])
     end
 
     it "returns failure if additional fields present" do
@@ -265,7 +304,7 @@ RSpec.describe Datacaster do
       type = described_class.schema { hash_schema(a: to_integer, b: to_boolean) }
 
       expect(type.({a: "not a number", b: "not a boolean"}).to_dry_result).to eq \
-        Failure(a: ["must be integer"], b: ["must be boolean"])
+        Failure(a: ["does not look like an integer"], b: ["does not look like a boolean"])
     end
 
     it "removes unaccepted keys with hash_schema" do
@@ -280,7 +319,7 @@ RSpec.describe Datacaster do
         )
       end
 
-      expect(subject.(params).to_dry_result).to eq Failure(user_info: ["must be set"])
+      expect(subject.(params).to_dry_result).to eq Failure(user_info: ["should be present"])
     end
   end
 
@@ -294,11 +333,11 @@ RSpec.describe Datacaster do
     end
 
     it "returns left Failure, when left is Failure" do
-      expect(subject.(:not_even_string).to_dry_result).to eq Failure(["must be string"])
+      expect(subject.(:not_even_string).to_dry_result).to eq Failure(["is not a string"])
     end
 
     it "returns right Failure, when left is Success and right is Failure" do
-      expect(subject.("not_test").to_dry_result).to eq Failure(['must be equal to "test"'])
+      expect(subject.("not_test").to_dry_result).to eq Failure(['does not equal "test"'])
     end
   end
 
@@ -316,7 +355,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns right Failure, when both are Failure" do
-      expect(subject.(:a_symbol).to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.(:a_symbol).to_dry_result).to eq Failure(["is not an integer"])
     end
   end
 
@@ -330,16 +369,16 @@ RSpec.describe Datacaster do
     end
 
     it "returns left Failure when only left is Failure" do
-      expect(subject.({a: :not_string, b: 5}).to_dry_result).to eq Failure({a: ["must be string"]})
+      expect(subject.({a: :not_string, b: 5}).to_dry_result).to eq Failure({a: ["is not a string"]})
     end
 
     it "returns right Failure when only right is Failure" do
-      expect(subject.({a: "test", b: :not_integer}).to_dry_result).to eq Failure({b: ["must be integer"]})
+      expect(subject.({a: "test", b: :not_integer}).to_dry_result).to eq Failure({b: ["is not an integer"]})
     end
 
     it "returns aggregated failures when both are Failure" do
       expect(subject.({a: :not_string, b: :not_integer}).to_dry_result).to eq \
-        Failure({a: ["must be string"], b: ["must be integer"]})
+        Failure({a: ["is not a string"], b: ["is not an integer"]})
     end
   end
 
@@ -353,7 +392,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns 'else' Failure, if left is Failure and 'else' is Failure" do
-      expect(subject.(:not_string).to_dry_result).to eq Failure(["must be integer"])
+      expect(subject.(:not_string).to_dry_result).to eq Failure(["is not an integer"])
     end
 
     it "returns 'then' Success, if left is Success and 'then' is Success" do
@@ -363,7 +402,7 @@ RSpec.describe Datacaster do
     # N.B.: "a & b | c" would return "c" here, instead of "b's Failure"
     # That's the reason we need then-else as separate node
     it "returns 'then' Failure, if left is Success and 'then' is Failure" do
-      expect(subject.("5").to_dry_result).to eq Failure(['must be equal to "test"'])
+      expect(subject.("5").to_dry_result).to eq Failure(['does not equal "test"'])
     end
 
     it "supports constructing different 'then'-'else' nodes with the same 'then'" do
@@ -388,28 +427,12 @@ RSpec.describe Datacaster do
     end
   end
 
-  describe "active model validations" do
-    require 'datacaster/validator'
-
-    subject do
-      described_class.schema { integer & validate(numericality: {greater_than_or_equal_to: 18}) }
-    end
-
-    it "returns Success if AM validation passes" do
-      expect(subject.(18).to_dry_result).to eq Success(18)
-    end
-
-    it "returns validation errors as Failure if AM validation fails" do
-      expect(subject.(17).to_dry_result).to eq Failure(["must be greater than or equal to 18"])
-    end
-  end
-
   describe "hash schema composition" do
     subject do
       type_field_partial =
         described_class.partial_schema do
           hash_schema(
-            type: string & transform_if_present(&:downcase) & validate(inclusion: {in: %w(person entity)})
+            type: string & transform_if_present(&:downcase) & check { |x| %(person entity).include?(x) }
           )
         end
 
@@ -479,7 +502,7 @@ RSpec.describe Datacaster do
         comment: 1
       }
 
-      expect(subject.(params).to_dry_result).to eq Failure(type: ["is not included in the list"])
+      expect(subject.(params).to_dry_result).to eq Failure(type: ["is invalid"])
 
       params = {
         type: "Person",
@@ -489,7 +512,7 @@ RSpec.describe Datacaster do
         comment: nil
       }
 
-      expect(subject.(params).to_dry_result).to eq Failure(name: ["must be string"], comment: ["must be string"])
+      expect(subject.(params).to_dry_result).to eq Failure(name: ["is not a string"], comment: ["is not a string"])
     end
   end
 
@@ -497,7 +520,7 @@ RSpec.describe Datacaster do
     subject do
       Datacaster.schema do
         type_validation = hash_schema(
-          type: string & transform_if_present(&:downcase) & validate(inclusion: {in: %w(person entity)})
+          type: string & transform_if_present(&:downcase) & check { |x| %(person entity).include?(x) }
         )
 
         person_qualifier = hash_schema(
@@ -577,7 +600,7 @@ RSpec.describe Datacaster do
         comment: nil
       }
 
-      expect(subject.(params).to_dry_result).to eq Failure(name: ["must be string"], comment: ["must be string"])
+      expect(subject.(params).to_dry_result).to eq Failure(name: ["is not a string"], comment: ["is not a string"])
     end
   end
 
@@ -595,14 +618,14 @@ RSpec.describe Datacaster do
     it "validates each member" do
       expect(subject.([1, 2, 3]).to_dry_result).to eq Success([1, 2, 3])
       expect(subject.([1, "something", 3, "anything"]).to_dry_result).to eq Failure(
-        1 => ["must be integer"],
-        3 => ["must be integer"]
+        1 => ["is not an integer"],
+        3 => ["is not an integer"]
       )
     end
 
     it "fails on empty array" do
       # empty arrays could be checked with "compare([])" if needed
-      expect(subject.([]).to_dry_result).to eq Failure(["must not be empty"])
+      expect(subject.([]).to_dry_result).to eq Failure(["should not be empty"])
     end
   end
 
@@ -613,7 +636,7 @@ RSpec.describe Datacaster do
           title: string,
           owner: {
             name: string,
-            title: string & validate(inclusion: {in: %w(director CEO)})
+            title: string & check { |x| %(director CEO).include?(x) }
           }
         )
       end
@@ -645,9 +668,9 @@ RSpec.describe Datacaster do
       }
 
       expect(schema.(params).to_dry_result).to eq Failure({
-        title: ["must be string"],
+        title: ["is not a string"],
         owner: {
-          title: ["is not included in the list"]
+          title: ["is invalid"]
         }
       })
 
@@ -676,7 +699,7 @@ RSpec.describe Datacaster do
           title: string,
           owner: {
             name: string,
-            title: string & validate(inclusion: {in: %w(director CEO)})
+            title: string & check { |x| %(director CEO).include?(x) }
           },
           details: hash_value
         )
@@ -733,13 +756,13 @@ RSpec.describe Datacaster do
       }
 
       expect(schema.(params).to_dry_result).to eq Failure({
-        external_ids: {1 => ["must be integer"], 2 => ["must be integer"]}
+        external_ids: {1 => ["does not look like an integer"], 2 => ["does not look like an integer"]}
       })
     end
 
     it "merges errors to 'base'" do
       schema = described_class.schema do
-        length_is_4 = check("Length", "must contain exactly 4 elements") { |x| x.length == 4 }
+        length_is_4 = check { |x| x.length == 4 }.cast_errors(transform_to_value('must contain exactly 4 elements'))
 
         hash_schema(
           title: string,
@@ -753,7 +776,7 @@ RSpec.describe Datacaster do
       }
 
       expect(schema.(params).to_dry_result).to eq Failure(
-        external_ids: {base: ["must contain exactly 4 elements"], 1 => ["must be integer"], 2 => ["must be integer"]}
+        external_ids: {base: ["must contain exactly 4 elements"], 1 => ["is not an integer"], 2 => ["is not an integer"]}
       )
     end
 
@@ -778,7 +801,7 @@ RSpec.describe Datacaster do
         # ensure that there are no excess fields if all previous validations
         # have passed.
         expect(schema.(params).to_dry_result).to eq Failure({
-          0 => {title: ["must be string"]}
+          0 => {title: ["is not a string"]}
         })
       end
 
@@ -802,7 +825,7 @@ RSpec.describe Datacaster do
         params = [{name: "John"}, {title: "Person 2", name: "James"}]
 
         expect(schema.(params).to_dry_result).to eq Failure({
-          0 => {title: ["must be string"]}
+          0 => {title: ["is not a string"]}
         })
 
         #
@@ -810,7 +833,7 @@ RSpec.describe Datacaster do
         params = [{title: "Person 1", name: "James"}, {name: "John"}]
 
         expect(schema.(params).to_dry_result).to eq Failure({
-          1 => {title: ["must be string"]}
+          1 => {title: ["is not a string"]}
         })
 
         #
@@ -822,8 +845,8 @@ RSpec.describe Datacaster do
         params = [{name: "James"}, {name: "John", title: "Person 2"}]
 
         expect(schema.(params).to_dry_result).to eq Failure({
-          0 => {title: ["must be string"], occupation: ["must be string"]},
-          1 => {occupation: ["must be string"]}
+          0 => {title: ["is not a string"], occupation: ["is not a string"]},
+          1 => {occupation: ["is not a string"]}
         })
       end
 
@@ -832,7 +855,7 @@ RSpec.describe Datacaster do
 
         expect(schema.([{title: "test"}]).to_dry_result).to eq Success([{title: "test"}])
 
-        expect(schema.([{}]).to_dry_result).to eq Failure({0 => {title: ["must be string"]}})
+        expect(schema.([{}]).to_dry_result).to eq Failure({0 => {title: ["is not a string"]}})
 
         expect(schema.([{title: "test", extra: :field}, {title: "test2", extra2: :field}]).to_dry_result).to eq Failure({
           0 => {extra: ["must be absent"]},
@@ -843,7 +866,7 @@ RSpec.describe Datacaster do
 
     it "processes array inside of array" do
       schema = described_class.schema do
-        two_elements = array_schema(integer) & validate(length: {is: 2})
+        two_elements = array_schema(integer) & check { |x| x.length == 2 }.cast_errors(transform_to_value('is the wrong length (should be 2 characters)'))
         points = array_schema(two_elements)
       end
 
@@ -855,7 +878,7 @@ RSpec.describe Datacaster do
 
       expect(schema.(params).to_dry_result).to eq Failure({
         0 => ["is the wrong length (should be 2 characters)"],
-        1 => {1 => ["must be integer"]}
+        1 => {1 => ["is not an integer"]}
       })
     end
   end
@@ -890,7 +913,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns failure if object is not enumerable" do
-      expect(@t.(1).to_dry_result).to eq Failure(["must be Enumerable"])
+      expect(@t.(1).to_dry_result).to eq Failure(["is not Enumerable"])
     end
   end
 
@@ -1239,7 +1262,7 @@ RSpec.describe Datacaster do
   describe "adding custom casters" do
     it "adds custom caster via lambda definition" do
       Datacaster::Config.add_predefined_caster(:time_string, -> {
-        string & validate(format: { with: /\A(0[0-9]|1[0-9]|2[0-3]):[03]0\z/ })
+        string & check { |x| x =~ /\A(0[0-9]|1[0-9]|2[0-3]):[03]0\z/ }
       })
 
       schema = Datacaster.schema { time_string }
@@ -1249,7 +1272,7 @@ RSpec.describe Datacaster do
     end
 
     it "adds custom caster via datacaster instance" do
-      CSS_COLOR = Datacaster.schema { string & validate(format: { with: /\A#(?:\h{3}){1,2}\z/ }) }
+      CSS_COLOR = Datacaster.schema { string & check { |x| x =~ /\A#(?:\h{3}){1,2}\z/ } }
       Datacaster::Config.add_predefined_caster(:css_color, CSS_COLOR)
 
       schema = Datacaster.schema { css_color }

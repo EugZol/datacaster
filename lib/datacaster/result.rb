@@ -6,6 +6,10 @@ module Datacaster
 
     def initialize(valid, value_or_errors)
       @value_or_errors = value_or_errors
+      if !valid && !@value_or_errors.is_a?(Hash) && !@value_or_errors.is_a?(Array)
+        @value_or_errors = Array(@value_or_errors)
+      end
+
       @valid = !!valid
     end
 
@@ -22,11 +26,12 @@ module Datacaster
       value
     end
 
-    def errors
-      unless @value_or_errors.is_a?(Hash) || @value_or_errors.is_a?(Array)
-        @value_or_errors = Array(@value_or_errors)
-      end
+    def raw_errors
       @valid ? nil : @value_or_errors
+    end
+
+    def errors
+      @errors ||= @valid ? nil : resolve_i18n(raw_errors)
     end
 
     def inspect
@@ -38,7 +43,22 @@ module Datacaster
     end
 
     def to_dry_result
-      @valid ? Success(@value_or_errors) : Failure(@value_or_errors)
+      @valid ? Success(@value_or_errors) : Failure(errors)
+    end
+
+    private
+
+    def resolve_i18n(o)
+      case o
+      when Array
+        o.map { |x| resolve_i18n(x) }
+      when Hash
+        o.transform_values { |x| resolve_i18n(x) }
+      when I18nValues::Base
+        o.resolve
+      else
+        o
+      end
     end
   end
 

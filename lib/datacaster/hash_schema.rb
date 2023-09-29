@@ -1,11 +1,14 @@
 module Datacaster
   class HashSchema < Base
-    def initialize(fields)
+    def initialize(fields, error_key = nil)
       @fields = fields
+
+      @error_keys = ['.hash_value', 'datacaster.errors.hash_value']
+      @error_keys.unshift(error_key) if error_key
     end
 
     def cast(object, runtime:)
-      return Datacaster.ErrorResult(["must be hash"]) unless object.is_a?(Hash)
+      return Datacaster.ErrorResult(I18nValues::Key.new(@error_keys, value: object)) unless object.is_a?(Hash)
 
       runtime.will_check!
 
@@ -24,7 +27,7 @@ module Datacaster
         if new_value.valid?
           result[key] = new_value.value
         else
-          errors[key] = new_value.errors
+          errors[key] = new_value.raw_errors
         end
       end
 

@@ -2,7 +2,7 @@ require 'ostruct'
 
 module Datacaster
   module Runtimes
-    class UserContext < Datacaster::Runtime
+    class UserContext < Base
       class ContextStruct
         def initialize(context, node)
           @context = context
