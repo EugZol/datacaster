@@ -67,6 +67,17 @@ module Datacaster
       check { |x| x != Datacaster.absent }.i18n_key(*error_keys)
     end
 
+    def default(value, on: nil)
+      transform do |x|
+        if x == Datacaster.absent ||
+          (on && x.respond_to?(on) && x.public_send(on))
+          value
+        else
+          x
+        end
+      end
+    end
+
     def transform_to_value(value)
       transform { value }
     end
@@ -162,7 +173,7 @@ module Datacaster
     def integer32(error_key = nil)
       error_keys = ['.integer32', 'datacaster.errors.integer32']
       error_keys.unshift(error_key) if error_key
-      integer & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
+      integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
     end
 
     def string(error_key = nil)
