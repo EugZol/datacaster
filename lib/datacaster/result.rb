@@ -1,9 +1,5 @@
-require 'dry/monads'
-
 module Datacaster
   class Result
-    include Dry::Monads[:result]
-
     def initialize(valid, value_or_errors)
       @value_or_errors = value_or_errors
       if !valid && !@value_or_errors.is_a?(Hash) && !@value_or_errors.is_a?(Array)
@@ -43,7 +39,11 @@ module Datacaster
     end
 
     def to_dry_result
-      @valid ? Success(@value_or_errors) : Failure(errors)
+      if @valid
+        Dry::Monads::Result::Success.new(@value_or_errors)
+      else
+        Dry::Monads::Result::Failure.new(errors)
+      end
     end
 
     private

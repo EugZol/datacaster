@@ -15,9 +15,10 @@ It is currently used in production in several projects (mainly as request parame
   - [Result value](#result-value)
   - [Hash schema](#hash-schema)
   - [Logical operators](#logical-operators)
-    - [*AND operator*:](#and-operator)
-    - [*OR operator*:](#or-operator)
-    - [*IF... THEN... ELSE operator*:](#if-then-else-operator)
+    - [*AND operator*](#and-operator)
+    - [*OR operator*](#or-operator)
+    - [*IF... THEN... ELSE operator*](#if-then-else-operator)
+    - [*SWITCH... ON... ELSE operator*](#switch-on-else-operator)
 - [Built-in types](#built-in-types)
   - [Basic types](#basic-types)
     - [`array(error_key = nil)`](#arrayerror_key--nil)
@@ -38,6 +39,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`must_be(klass, error_key = nil)`](#must_beklass-error_key--nil)
     - [`optional(base)`](#optionalbase)
     - [`pass`](#pass)
+    - [`pass_if(base)`](#pass_ifbase)
     - [`pick(key)`](#pickkey)
     - [`remove`](#remove)
     - [`responds_to(method, error_key = nil)`](#responds_tomethod-error_key--nil)
@@ -266,7 +268,7 @@ And one special: AND with error aggregation (`*`).
 
 The former 3 is described immediately below, and the latter is described in the section on hash schemas further in this file.
 
-#### *AND operator*:
+#### *AND operator*
 
 ```ruby
 even_number = Datacaster.schema { integer & check { |x| x.even? } }
@@ -282,7 +284,7 @@ even_number.("test")
 
 If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation. See below in this file section on transformations where this might be relevant.
 
-#### *OR operator*:
+#### *OR operator*
 
 ```ruby
 # 'compare' custom type returns ValidResult if and only if validated value == compare's argument
@@ -296,12 +298,57 @@ person_or_entity.(:ngo)    # => Datacaster::ErrorResult(["does not equal :entity
 
 Notice that OR operator, if left-hand validation fails, passes the original value to the right-hand validation. As you see in the example above resultant error messages are not always convenient (i.e. to show something like "value must be :person or :entity" is preferable to showing somewhat misleading "must be equal to :entity"). See the next section on "IF... THEN... ELSE" for closer to the real world example.
 
-#### *IF... THEN... ELSE operator*:
+#### *IF... THEN... ELSE operator*
 
-Let's suppose we want to validate that incoming hash is either 'person' or 'entity', where
+Let's support we want to run different validations depending on some value, e.g.:
 
-- 'person' is a hash with 3 keys (kind: `:person`, name: string, salary: integer),
-- 'entity' is a hash with 4 keys (kind: `:entity`, title: string, form: string, revenue: integer).
+* if 'salary' is more than 100_000, check for the additional key, 'passport'
+* otherwise, ensure 'passport' key is absent
+* in any case, check that 'name' key is present and is a string
+
+```ruby
+applicant =
+  Datacaster.schema do
+    base = hash_schema(
+      name: string,
+      salary: integer
+    )
+
+    large_salary = check { |x| x[:salary] > 100_000 }
+
+    base &
+      large_salary.
+        then(passport: string).
+        else(passport: absent)
+  end
+
+applicant.(name: 'John', salary: 50_000)
+# => Datacaster::ValidResult({:name=>"John", :salary=>50000})
+
+applicant.(name: 'Jane', salary: 101_000, passport: 'AB123CD')
+# => Datacaster::ValidResult({:name=>"Jane", :salary=>101000, :passport=>"AB123CD"})
+
+applicant.(name: 'George', salary: 101_000)
+# => Datacaster::ErrorResult({:passport=>["is not a string"])
+```
+
+Formally, with `a.then(b).else(c)`:
+
+* if `a` returns `ValidResult`, then `b` is called *with the result of `a`* (not the original value) and whatever `b` returns is returned;
+* otherwise, `c` is called with the original value, and whatever `c` returns is returned.
+
+`else`-part is required and could not be omitted.
+
+Note: this construct is *not* an equivalent of `a & b | c`.
+
+With `a.then(b).else(c)` if `a` and `b` fails, then `b`'s error is returned. With `a & b | c`, instead, `c`'s result would be returned.
+
+#### *SWITCH... ON... ELSE operator*
+
+Let's suppose we want to validate that incoming hash is either 'person' or 'entity', where:
+
+* 'person' is a hash with 3 keys (kind: `:person`, name: string, salary: integer),
+* 'entity' is a hash with 4 keys (kind: `:entity`, title: string, form: string, revenue: integer).
 
 ```ruby
 person_or_entity =
@@ -317,7 +364,25 @@ person_or_entity =
     # separate entity validator (excluding validation of 'kind' field)
     entity = hash_schema(title: string, form: string, revenue: integer)
 
-    kind_is_valid & hash_schema(kind: compare(:person)).then(person).else(entity)
+
+    # 1. First option, explicit definition
+
+    kind_is_valid &
+      switch(pick(:kind)).
+        on(compare(:person), person).
+        on(compare(:entity), entity)
+
+    # 2. Second option, shortcut definiton
+
+    kind_is_valid &
+      switch(:kind).
+        on(:person, person).
+        on(:entity, entity)
+
+    # 3. Third option, using keywords args and Ruby 3.1 value omission in hash literals
+
+    kind_is_valid &
+      switch(:kind, person:, entity:)
   end
 
 person_or_entity.(
@@ -341,22 +406,27 @@ person_or_entity.(
 # => Datacaster::ErrorResult({:kind=>["is invalid"]})
 ```
 
-See below documentation on 'check' custom type to know how to provide custom error message instead of 'is invalid'.
-
-Schema, defined above, behaves in all aspects (shown in the example and in other practical applications which might come to your mind) just as you might expect it to, after reading previous examples and the code above.
-
 In our opinion the above example shows most laconic way to express underlying 'business-logic' (including elaborate error reporting on all kinds of failures) among all available competitor approaches/gems.
 
-Formally, with `a.then(b).else(c)`:
+Notice that shortcut definitions are available (illustrated in the example above) for the switch caster:
 
-* if `a` returns `ValidResult`, then `b` is called *with the result of `a`* (not the original value) and whatever `b` returns is returned;
-* otherwise, `c` is called with the original value, and whatever `c` returns is returned.
+* `switch(:key)` is exactly the same as `switch(pick(:key))` (works for a string, a symbol, or an array thereof)
+* `on(:key, ...)` is exactly the same as `on(compare(:key), ...)` (works for a string or a symbol)
+* `switch([caster], on_check => on_caster, ...)` is exactly the same as `switch([caster]).on(on_check, on_caster).on(...)`
 
-`else`-part is required and could not be omitted.
+`switch()` without a `base` argument will pass the incoming value to the `.on(...)` casters.
 
-Note: this construct is *not* an equivalent of `a & b | c`.
+Formally, with `switch(a).on(on_check, on_caster).else(c)`:
 
-With `a.then(b).else(c)` if `a` and `b` fails, then `b`'s error is returned. With `a & b | c`, instead, `c`'s result would be returned.
+* if `a` returns ErrorResult, it is the result of the switch
+* otherwise, all `on_check` casters from the `.on` blocks are called with the result of `a`, until the first one which returns ValidResult is found – corresponding `on_caster` is called with the original value and its result is the result of the switch
+* if all `on_check`-s returned ErrorResult
+  * and there is an `.else` block, `c` is called with the original value and its result is the result of the switch
+  * if there is no `.else` block, `ErrorResult(['is invalid'])` is returned from the switch
+
+I18n keys:
+
+* all `.on` checks resulted in an error and there is no `.else`: `'.switch'`, `'datacaster.errors.switch'`
 
 ## Built-in types
 
@@ -450,10 +520,10 @@ Always returns ValidResult.
 
 Returns `default_value` in the following cases:
 
-* if value is `Datacaster.absent` (`on` is disregarded in such case)
-* if `on` is set to method name to which the value responds and yields truthy
+* if the value is `Datacaster.absent` (`on` is disregarded in such case)
+* if `on` is set to a method name to which the value responds and yields truthy
 
-Returns initial value otherwise.
+Returns the initial value otherwise.
 
 Set `on` to `:nil?`, `:empty?` or similar method names.
 
@@ -594,6 +664,12 @@ Always returns ValidResult. Doesn't transform the value.
 
 Useful to "mark" the value as validated (see section below on hash schemas, where this could be applied).
 
+#### `pass_if(base)`
+
+Returns ValidResult if and only if base returns ValidResult. Returns base's error result otherwise.
+
+Doesn't transform the value: if base succeeds returns the original value (not the one that base returned).
+
 #### `pick(key)`
 
 Returns ValidResult if and only if the value `#is_a?(Enumerable)`.
@@ -642,15 +718,7 @@ I18n keys: `error_key`, `'.responds_to'`, `'datacaster.errors.responds_to'`. Add
 
 #### `transform_to_value(value)`
 
-Always returns ValidResult. The value is transformed to provided argument. Is used to provide default values, e.g.:
-
-```ruby
-max_concurrent_connections = Datacaster.schema { compare(nil).then(transform_to_value(5)).else(integer) }
-
-max_concurrent_connections.(9)   # => Datacaster::ValidResult(9)
-max_concurrent_connections.("9") # => Datacaster::ErrorResult(["is not an integer"])
-max_concurrent_connections.(nil) # => Datacaster::ValidResult(5)
-```
+Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). See also [`default`](#defaultdefault_value-on-nil).
 
 ### "Web-form" types
 
@@ -1375,7 +1443,7 @@ en:
       wrong_format: wrong format
 ```
 
-Let's gradually reduce the boilerplate, starting with the most explicit example. Notice that all relative keys (i.e. keys which will be scoped during the execution) starts with `'.'`:
+Let's gradually reduce the boilerplate, starting with the most explicit example. Notice that all relative keys (i.e. keys which will be scoped during the execution) start with `'.'`:
 
 ```ruby
 schema =
@@ -1436,7 +1504,6 @@ schema =
   Datacaster.schema(i18n_scope: 'user') do
     check { |v| v[:id] == 1 } &
       hash_schema(
-        # '.wrong_format' inferred to be '.name.wrong_format'
         name: check { false }
       )
   end
@@ -1470,9 +1537,9 @@ Every caster will automatically provide `value` variable for i18n interpolation.
 
 All keyword arguments of `#i18n_key`, `#i18n_scope` and designed for that sole purpose `#i18n_vars` are provided as interpolation variables on i18n.
 
-It is possible to add i18n variables at the runtime (e.g. inside `check { ... }` block) by calling `i18n_vars!(variable: 'value')` (or `i18n_var!(:variable, 'value')`.
+It is possible to add i18n variables at the runtime (e.g. inside `check { ... }` block) by calling `i18n_vars!(variable: 'value')` or `i18n_var!(:variable, 'value')`.
 
-Outer calls of `#i18n_key` (`#i18n_scope`, `#i18n_vars`) have presedence before the inner if variable names collide. However, runtime calls of `#i18n_vars!` and `#i18n_var!` overwrites compile-time variables from the next nearest key, scope or vars on collision.
+Outer calls of `#i18n_key` (`#i18n_scope`, `#i18n_vars`) have presedence before the inner if variable names collide. However, runtime calls of `#i18n_vars!` and `#i18n_var!` overwrite compile-time variables from the next nearest key, scope or vars on collision.
 
 ## Registering custom 'predefined' types
 

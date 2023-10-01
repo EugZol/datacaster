@@ -46,7 +46,7 @@ module Datacaster
     end
 
     def then(other)
-      ThenNode.new(self, other)
+      ThenNode.new(self, DefinitionDSL.expand(other))
     end
 
     def with_context(context)

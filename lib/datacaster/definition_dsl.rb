@@ -4,7 +4,6 @@ require 'date'
 module Datacaster
   class DefinitionDSL
     include Datacaster::Predefined
-    include Dry::Monads[:result]
 
     # Translates hashes like {a: <IntegerChecker>} to <HashSchema {a: <IntegerChecker>}>
     #   and arrays like [<IntegerChecker>] to <ArraySchema <IntegerChecker>>

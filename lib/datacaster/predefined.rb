@@ -53,6 +53,18 @@ module Datacaster
       Validator.new(active_model_validations)
     end
 
+    def schema(base)
+      ContextNodes::StructureCleaner.new(base, strategy: :fail)
+    end
+
+    def choosy_schema(base)
+      ContextNodes::StructureCleaner.new(base, strategy: :remove)
+    end
+
+    def partial_schema(base)
+      ContextNodes::StructureCleaner.new(base, strategy: :pass)
+    end
+
     # 'Meta' types
 
     def absent(error_key = nil)
@@ -90,7 +102,25 @@ module Datacaster
       transform(&:itself)
     end
 
-    def pick(*keys)
+    def switch(*base, **on_clauses)
+      switch =
+        if base.length == 0
+          SwitchNode.new
+        else
+          SwitchNode.new(base)
+        end
+      on_clauses.reduce(switch) do |result, (k, v)|
+        result.on(k, v)
+      end
+    end
+
+    def pass_if(base)
+      ContextNodes::PassIf.new(base)
+    end
+
+    def pick(*keys, strict: false)
+      raise RuntimeError.new("provide keys to pick, e.g. pick(:key)") if keys.empty?
+
       must_be(Enumerable) & transform { |value|
         result =
           keys.map do |key|
@@ -209,7 +239,7 @@ module Datacaster
         elsif ['false', '0', false].include?(x)
           Datacaster.ValidResult(false)
         else
-          Datacaster.ErrorResult(Datacaster::I18nValues::Key.new(error_keys, value: x))
+          Datacaster.ErrorResult(I18nValues::Key.new(error_keys, value: x))
         end
       end
     end

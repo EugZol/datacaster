@@ -9,7 +9,7 @@ module Datacaster
     def else(else_caster)
       raise ArgumentError.new("Datacaster: double else clause is not permitted") if @else
 
-      self.class.new(@left, @then, else_caster)
+      self.class.new(@left, @then, DefinitionDSL.expand(else_caster))
     end
 
     def cast(object, runtime:)

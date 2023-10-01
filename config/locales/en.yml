@@ -21,4 +21,5 @@ en:
       to_float: does not look like a float
       to_integer: does not look like an integer
       non_empty_string: should be non-empty string
+      switch: is invalid
       try: raised an error

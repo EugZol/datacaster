@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake', '~> 12.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'i18n', '~> 1.14'
+  spec.add_development_dependency 'dry-monads', '>= 1.3', '< 1.4'
 
-  spec.add_runtime_dependency 'dry-monads', '>= 1.3', '< 1.4'
   spec.add_runtime_dependency 'zeitwerk', '>= 2', '< 3'
 end
