@@ -32,12 +32,12 @@ It is currently used in production in several projects (mainly as request parame
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
   - [Special types](#special-types)
-    - [`absent(error_key = nil)`](#absenterror_key--nil)
+    - [`absent(error_key = nil, on: nil)`](#absenterror_key--nil-on-nil)
     - [`any(error_key = nil)`](#anyerror_key--nil)
     - [`default(default_value, on: nil)`](#defaultdefault_value-on-nil)
     - [`merge_message_keys(*keys)`](#merge_message_keyskeys)
     - [`must_be(klass, error_key = nil)`](#must_beklass-error_key--nil)
-    - [`optional(base)`](#optionalbase)
+    - [`optional(base, on: nil)`](#optionalbase-on-nil)
     - [`pass`](#pass)
     - [`pass_if(base)`](#pass_ifbase)
     - [`pick(key)`](#pickkey)
@@ -502,9 +502,16 @@ Returns ValidResult if and only if provided value is a string and is not empty. 
 
 ### Special types
 
-#### `absent(error_key = nil)`
+#### `absent(error_key = nil, on: nil)`
 
-Returns ValidResult if and only if provided value is `Datacaster.absent` (this is singleton instance). Relevant only for hash schemas (see below). Doesn't transform the value.
+Returns ValidResult if and only if provided value is absent. Relevant only for hash schemas (see below). Transforms the value to `Datacaster.absent`.
+
+The value is considered absent:
+
+* if the value is `Datacaster.absent` (`on` is disregarded in such case)
+* if `on` is set to a method name to which the value responds and yields truthy
+
+Set `on` to `:nil?`, `:empty?` or similar method names.
 
 I18n keys: `error_key`, `'.absent'`, `'datacaster.errors.absent'`.
 
@@ -636,18 +643,25 @@ Returns ValidResult if and only if the value `#is_a?(klass)`. Doesn't transform 
 
 I18n keys: `error_key`,  `'.must_be'`, `'datacaster.errors.must_be'`. Adds `reference` i18n variable, setting it to `klass.name`. 
 
-#### `optional(base)`
+#### `optional(base, on: nil)`
 
-Returns ValidResult if and only if the value is either `Datacaster.absent` or passes `base` validation. See below documentation on hash schemas for details on `Datacaster.absent`.
+Returns ValidResult if and only if the value is either absent or passes `base` validation. In the value is absent, transforms it to the `Datacaster.absent`. Otherwise, returns `base` result.
+
+Value is considered absent:
+
+* if the value is `Datacaster.absent` (`on` is disregarded in such case)
+* if `on` is set to a method name to which the value responds and yields truthy
+
+Set `on` to `:nil?`, `:empty?` or similar method names.
 
 ```ruby
 item_with_optional_price =
-    Datacaster.schema do
-      hash_schema(
-        name: string,
-        price: optional(float)
-      )
-    end
+  Datacaster.schema do
+    hash_schema(
+      name: string,
+      price: optional(float)
+    )
+  end
 
 item_with_optional_price.(name: "Book", price: 1.23)
 # => Datacaster::ValidResult({:name=>"Book", :price=>1.23})
@@ -1025,7 +1039,7 @@ restricted_params.(username: "test", is_admin: nil)
 
 More practical case is to include `absent` validator in logical expressions, e.g. `something: absent | string`. If `something` is set to `nil`, this validation will fail, which could be the desired (and hardly achieved by any other validation framework) behavior.
 
-Also, see documentation for [`optional(base)`](#optionalbase) and [`optional_param(base)`](#optional_parambase). If some value becomes `Datacaster.absent` in its chain of validations-transformations, it is removed from the resultant hash (on the same stage where the lack of extra/unchecked keys in the hash is validated):
+Also, see documentation for [`optional(base)`](#optionalbase-on-nil) and [`optional_param(base)`](#optional_parambase). If some value becomes `Datacaster.absent` in its chain of validations-transformations, it is removed from the resultant hash (on the same stage where the lack of extra/unchecked keys in the hash is validated):
 
 ```ruby
 person =
