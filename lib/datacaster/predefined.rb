@@ -67,10 +67,20 @@ module Datacaster
 
     # 'Meta' types
 
-    def absent(error_key = nil)
+    def absent(error_key = nil, on: nil)
       error_keys = ['.absent', 'datacaster.errors.absent']
       error_keys.unshift(error_key) if error_key
-      check { |x| x == Datacaster.absent }.i18n_key(*error_keys)
+
+      cast do |x|
+        if x == Datacaster.absent ||
+          (!on.nil? && x.respond_to?(on) && x.public_send(on))
+          Datacaster.ValidResult(Datacaster.absent)
+        else
+          Datacaster.ErrorResult(
+            I18nValues::Key.new(error_keys, value: x)
+          )
+        end
+      end
     end
 
     def any(error_key = nil)
@@ -82,7 +92,7 @@ module Datacaster
     def default(value, on: nil)
       transform do |x|
         if x == Datacaster.absent ||
-          (on && x.respond_to?(on) && x.public_send(on))
+          (!on.nil? && x.respond_to?(on) && x.public_send(on))
           value
         else
           x
@@ -153,8 +163,16 @@ module Datacaster
       check { |x| x.is_a?(klass) }.i18n_key(*error_keys, reference: klass.name)
     end
 
-    def optional(base)
-      absent | base
+    def optional(base, on: nil)
+      return absent | base if on == nil
+      cast do |x|
+        if x == Datacaster.absent ||
+          (!on.nil? && x.respond_to?(on) && x.public_send(on))
+          Datacaster.ValidResult(Datacaster.absent)
+        else
+          base.(x)
+        end
+      end
     end
 
     # Strict types

@@ -10,6 +10,28 @@ RSpec.describe Datacaster do
     Datacaster::Config.i18n_module = @i18n_module
   end
 
+  describe "absent typecasting" do
+    subject { described_class.schema { absent } }
+
+    it "returns Success on Datacaster.absent" do
+      expect(subject.(Datacaster.absent).to_dry_result).to eq Success(Datacaster.absent)
+    end
+
+    it "returns Failure on some value" do
+      expect(subject.(5).to_dry_result).to eq Failure(["should be absent"])
+    end
+
+    it "returns Failure on nil" do
+      expect(subject.(nil).to_dry_result).to eq Failure(["should be absent"])
+    end
+
+    it "returns Success on nils with on: :nil?" do
+      schema = described_class.schema { absent(on: :nil?) }
+      expect(schema.(nil).to_dry_result).to eq Success(Datacaster.absent)
+      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(Datacaster.absent)
+    end
+  end
+
   describe "any typecasting" do
     subject { described_class.schema { any } }
 
@@ -134,6 +156,12 @@ RSpec.describe Datacaster do
 
     it "returns Failure on nils" do
       expect(subject.(nil).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns Success on nils with on: :nil?" do
+      schema = described_class.schema { optional(string, on: :nil?) }
+      expect(schema.(nil).to_dry_result).to eq Success(Datacaster.absent)
+      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(Datacaster.absent)
     end
 
     it "passes empty strings" do
