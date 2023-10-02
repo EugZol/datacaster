@@ -51,6 +51,19 @@ RSpec.describe Datacaster do
       expect(schema.(1).raw_errors).to eq [Key.new('namespace.not_an_array', value: 1)]
     end
 
+    it 'allows to redefine switch node errors with #i18n_key' do
+      schema =
+        Datacaster.schema do
+          switch(pick(:key)).
+            on(1, hash_schema(other_key: check { false }.i18n_key('.one'))).
+            i18n_key('.two').
+            i18n_scope('switch')
+        end
+
+      expect(schema.(key: 1).raw_errors).to eq({other_key: [Key.new(['switch.other_key.one', 'switch.one'], value: Datacaster.absent)]})
+      expect(schema.(key: 2).raw_errors).to eq([Key.new('switch.two', value: {key: 2})])
+    end
+
     it 'allows to redefine array/hash errors with #i18n_map_keys' do
       schema = Datacaster.schema do
         hash_schema(

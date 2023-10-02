@@ -891,29 +891,39 @@ RSpec.describe Datacaster do
     end
   end
 
-  describe "pick mapping" do
-    before do
-      @t = Datacaster.schema { pick(0) }
+  describe "pass_if casting" do
+    subject { Datacaster.schema { pass_if(check { |x| x[:test] == 0 }) } }
+
+    it "passes original if cast succeeds" do
+      expect(subject.(test: 0).to_dry_result).to eq Success(test: 0)
     end
 
+    it "passes error" do
+      expect(subject.(test: 1).to_dry_result).to eq Failure(['is invalid'])
+    end
+  end
+
+  describe "pick mapping" do
+    subject { Datacaster.schema { pick(0) } }
+
     it "picks value from hash" do
-      expect(@t.(0 => :a).to_dry_result).to eq Success(:a)
+      expect(subject.(0 => :a).to_dry_result).to eq Success(:a)
     end
 
     it "picks value from array" do
-      expect(@t.([:a]).to_dry_result).to eq Success(:a)
+      expect(subject.([:a]).to_dry_result).to eq Success(:a)
     end
 
     it "returns Absent if there is not any value" do
-      expect(@t.(1 => :b).to_dry_result).to eq Success(Datacaster.absent)
+      expect(subject.(1 => :b).to_dry_result).to eq Success(Datacaster.absent)
     end
 
     it "returns nil if the value is nil" do
-      expect(@t.(0 => nil).to_dry_result).to eq Success(nil)
+      expect(subject.(0 => nil).to_dry_result).to eq Success(nil)
     end
 
     it "returns failure if object is not enumerable" do
-      expect(@t.(1).to_dry_result).to eq Failure(["is not Enumerable"])
+      expect(subject.(1).to_dry_result).to eq Failure(["is not Enumerable"])
     end
   end
 

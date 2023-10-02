@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "datacaster"
+require "dry-monads"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

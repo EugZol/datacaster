@@ -18,7 +18,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::Comparator>"
+      "#<Datacaster::Comparator(#{@value.inspect})>"
     end
   end
 end
