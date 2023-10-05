@@ -201,6 +201,34 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "relate typecasting" do
+    it "performs picks and transforms with shotrcut definition" do
+      schema = Datacaster.schema { relate(:a, :<, :b) }
+
+      expect(schema.(a: 1, b: 2).to_dry_result).to eq Success(a: 1, b: 2)
+      expect(schema.(a: 2, b: 1).to_dry_result).to eq Failure(["a should be < b"])
+    end
+
+    it "performs picks and transforms with full definition" do
+      schema = Datacaster.schema { relate(transform(&:length), :==, transform_to_value(5)) }
+
+      expect(schema.([1, 2, 3, 4, 5]).to_dry_result).to eq Success([1, 2, 3, 4, 5])
+      expect(schema.([1, 2, 3, 4]).to_dry_result).to eq Failure(["4 should be == 5"])
+    end
+
+    it "passes first pick result on error" do
+      schema = Datacaster.schema { relate(check('datacaster.errors.integer') { false }, :<, check { false }) }
+
+      expect(schema.(b: 1).to_dry_result).to eq Failure(["is not an integer"])
+    end
+
+    it "passes second pick result on error if first is valid" do
+      schema = Datacaster.schema { relate(pass, :<, check('datacaster.errors.integer') { false }) }
+
+      expect(schema.(b: 1).to_dry_result).to eq Failure(["is not an integer"])
+    end
+  end
+
   describe "string optional param typecasting" do
     subject { described_class.schema { optional_param(string) } }
 

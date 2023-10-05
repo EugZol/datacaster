@@ -104,6 +104,52 @@ module Datacaster
       transform { value }
     end
 
+    # min_amount: has_relation(:min_amount, :>, :max_amount)
+
+    def relate(left, op, right, error_key: nil)
+      error_keys = ['.relate', 'datacaster.errors.relate']
+      additional_vars = {}
+
+      {left: left, op: op, right: right}.each do |k, v|
+        if [String, Symbol, Integer].any? { |c| v.is_a?(c) }
+          additional_vars[k] = v
+        elsif !Datacaster.instance?(v)
+          raise RuntimeError, "expected #{k} to be String, Symbol, Integer or Datacaster::Base, but got #{v.inspect}", caller
+        end
+      end
+
+      if op.is_a?(Integer)
+        raise RuntimeError, "expected op to be String, Symbol or Datacaster::Base, but got #{op.inspect}", caller
+      end
+
+      if [left, op, right].none? { |x| Datacaster.instance?(x) }
+        error_keys.unshift(".#{left}.#{op}.#{right}")
+      end
+      error_keys.unshift(error_key) if error_key
+
+      left = pick(left) unless Datacaster.instance?(left)
+      right = pick(right) unless Datacaster.instance?(right)
+      op_caster = op
+      unless Datacaster.instance?(op_caster)
+        op_caster = check { |(l, r)| l.respond_to?(op) && l.public_send(op, r) }
+      end
+
+      cast do |value|
+        left_result = left.(value)
+        next left_result unless left_result.valid?
+        i18n_var!(:left, left_result.value) unless additional_vars.key?(:left)
+
+        right_result = right.(value)
+        next right_result unless right_result.valid?
+        i18n_var!(:right, right_result.value) unless additional_vars.key?(:right)
+
+        result = op_caster.([left_result.value, right_result.value])
+        next Datacaster.ErrorResult([I18nValues::Key.new(error_keys)]) unless result.valid?
+
+        Datacaster.ValidResult(value)
+      end.i18n_vars(additional_vars)
+    end
+
     def remove
       transform { Datacaster.absent }
     end
