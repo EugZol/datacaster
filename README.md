@@ -56,6 +56,8 @@ It is currently used in production in several projects (mainly as request parame
     - [`try(error_key = nil, catched_exception:) { |value| ... }`](#tryerror_key--nil-catched_exception--value--)
     - [`validate(active_model_validations, name = 'Anonymous')`](#validateactive_model_validations-name--anonymous)
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
+    - [`included_in(*reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
+    - [`relate(left, op, right, error_key: nil)`](#relateleft-op-right-error_key-nil)
     - [`transform { |value| ... }`](#transform--value--)
     - [`transform_if_present { |value| ... }`](#transform_if_present--value--)
   - [Array schemas](#array-schemas)
@@ -175,10 +177,10 @@ array = Datacaster.schema { array }
 array.(nil)
 
 # In this README
-#=> Datacaster::ErrorResult(['should be an array'])
+# => Datacaster::ErrorResult(['should be an array'])
 
 # In reality
-#=> <Datacaster::ErrorResult([#<Datacaster::I18nValues::Key(.array, datacaster.errors.array) {:value=>nil}>])>
+# => <Datacaster::ErrorResult([#<Datacaster::I18nValues::Key(.array, datacaster.errors.array) {:value=>nil}>])>
 ```
 
 See [section on i18n](#internationalization-i18n) for details.
@@ -882,8 +884,6 @@ I18n is performed by ActiveModel gem.
 
 #### `compare(reference_value, error_key = nil)`
 
-This type is the way to ensure some value in your schema is some predefined "constant".
-
 Returns ValidResult if and only if `reference_value` equals value.
 
 ```ruby
@@ -896,6 +896,50 @@ agreed_with_tos =
 ```
 
 I18n keys: `error_key`, `'.compare'`, `'datacaster.errors.compare'`. Adds `reference` i18n variable, setting it to `reference_value.to_s`.
+
+#### `included_in(*reference_values, error_key: nil)`
+
+Returns ValidResult if and only if `reference_values.include?` the value.
+
+I18n keys: `error_key`, `'.included_in'`, `'datacaster.errors.included_in'`. Adds `reference` i18n variable, setting it to `reference_values.map(&:to_s).join(', ')`.
+
+#### `relate(left, op, right, error_key: nil)`
+
+Returns ValidResult if and only if `left`, `right` and `op` returns valid result. Doesn't transform the value.
+
+Use `relate` to check relations between object keys:
+
+```ruby
+ordered =
+  # Check that hash[:a] < hash[:b]
+  Datacaster.schema do
+    transform_to_hash(
+      a: relate(:a, :<, :b) & pick(:a),
+      b: pick(:b)
+    )
+  end
+
+ordered.(a: 1, b: 2)
+# => Datacaster::ValidResult({:a=>1, :b=>2})
+
+ordered.(a: 2, b: 1)
+# => Datacaster::ErrorResult({:a=>["a should be < b"]})
+
+ordered.({})
+# => Datacaster::ErrorResult({:a=>["a should be < b"]})
+```
+
+Notice that shortcut definitions are available (illustrated in the example above) for the `relate` caster:
+
+* `:key` provided as 'left' or 'right' argument is exactly the same as `pick(:key)` (works for a string, a symbol or an integer)
+* `:method` provided as 'op' argument is exactly the same as `check { |(l, r)| l.respond_to?(method) && l.public_send(method, r) }` (works for a string or a symbol)
+
+Formally, `relate(left, op, right, error_key: error_key)` will:
+
+* call the `left` caster with the original value, return the result unless it's valid
+* call the `right` caster with the original value, return the result unless it's valid
+* call the `op` caster with the `[left_result, right_result]`, return the result unless it's valid
+* return the original value as valid result
 
 #### `transform { |value| ... }`
 

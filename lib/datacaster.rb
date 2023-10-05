@@ -24,6 +24,10 @@ module Datacaster
     Datacaster::Absent.instance
   end
 
+  def instance?(object)
+    object.is_a?(Mixin)
+  end
+
   private
 
   def build_schema(i18n_scope: nil, &block)
@@ -31,7 +35,7 @@ module Datacaster
 
     datacaster = DefinitionDSL.eval(&block)
 
-    unless datacaster.is_a?(Base)
+    unless Datacaster.instance?(datacaster)
       raise "Datacaster instance should be returned from a block (e.g. result of 'hash_schema(...)' call)"
     end
 

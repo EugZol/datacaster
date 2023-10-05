@@ -45,6 +45,17 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "compare typecasting" do
+    subject { described_class.schema { compare(5) } }
+
+    it "passes exact value and fails on everything else" do
+      expect(subject.(5).to_dry_result).to eq Success(5)
+      expect(subject.(nil).to_dry_result).to eq Failure(["does not equal 5"])
+      expect(subject.(Datacaster.absent).to_dry_result).to eq Failure(["does not equal 5"])
+      expect(subject.(6).to_dry_result).to eq Failure(["does not equal 5"])
+    end
+  end
+
   describe "default typecasting" do
     subject { described_class.schema { default(5) } }
 
@@ -72,6 +83,20 @@ RSpec.describe Datacaster do
       expect(schema.(nil).to_dry_result).to eq Success(nil)
       expect(schema.(1).to_dry_result).to eq Success(1)
       expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
+    end
+  end
+
+  describe "included_in typecasting" do
+    subject { described_class.schema { included_in(1, '2', ['test']) } }
+
+    it "passes one of the exact values and fails on everything else" do
+      expect(subject.(1).to_dry_result).to eq Success(1)
+      expect(subject.('2').to_dry_result).to eq Success('2')
+      expect(subject.(['test']).to_dry_result).to eq Success(['test'])
+
+      expect(subject.(2).to_dry_result).to eq Failure(['is not one of 1, 2, ["test"]'])
+      expect(subject.([]).to_dry_result).to eq Failure(['is not one of 1, 2, ["test"]'])
+      expect(subject.(nil).to_dry_result).to eq Failure(['is not one of 1, 2, ["test"]'])
     end
   end
 
@@ -173,6 +198,34 @@ RSpec.describe Datacaster do
 
       expect(schema.(title: "test").to_dry_result).to eq Success({title: "test"})
       expect(schema.({}).to_dry_result).to eq Success({})
+    end
+  end
+
+  describe "relate typecasting" do
+    it "performs picks and transforms with shotrcut definition" do
+      schema = Datacaster.schema { relate(:a, :<, :b) }
+
+      expect(schema.(a: 1, b: 2).to_dry_result).to eq Success(a: 1, b: 2)
+      expect(schema.(a: 2, b: 1).to_dry_result).to eq Failure(["a should be < b"])
+    end
+
+    it "performs picks and transforms with full definition" do
+      schema = Datacaster.schema { relate(transform(&:length), :==, transform_to_value(5)) }
+
+      expect(schema.([1, 2, 3, 4, 5]).to_dry_result).to eq Success([1, 2, 3, 4, 5])
+      expect(schema.([1, 2, 3, 4]).to_dry_result).to eq Failure(["4 should be == 5"])
+    end
+
+    it "passes first pick result on error" do
+      schema = Datacaster.schema { relate(check('datacaster.errors.integer') { false }, :<, check { false }) }
+
+      expect(schema.(b: 1).to_dry_result).to eq Failure(["is not an integer"])
+    end
+
+    it "passes second pick result on error if first is valid" do
+      schema = Datacaster.schema { relate(pass, :<, check('datacaster.errors.integer') { false }) }
+
+      expect(schema.(b: 1).to_dry_result).to eq Failure(["is not an integer"])
     end
   end
 

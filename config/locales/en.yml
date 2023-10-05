@@ -11,10 +11,12 @@ en:
       empty: should not be empty
       float: is not a float
       hash_value: is not a hash
+      included_in: is not one of %{reference}
       integer: is not an integer
       integer32: is not a 32-bit integer
       iso8601: is not a string with ISO-8601 date and time
       must_be: "is not %{reference}"
+      relate: "%{left} should be %{op} %{right}"
       responds_to: "does not respond to %{reference}"
       string: is not a string
       to_boolean: does not look like a boolean

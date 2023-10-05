@@ -17,7 +17,7 @@ module Datacaster
         if right_result.valid?
           left_result
         else
-          Datacaster.ErrorResult(self.class.merge_errors(left_result.raw_errors, right_result.raw_errors))
+          Datacaster.ErrorResult(Utils.merge_errors(left_result.raw_errors, right_result.raw_errors))
         end
       end
     end

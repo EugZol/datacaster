@@ -45,9 +45,9 @@ module Datacaster
           end
         else
           if key.is_a?(Array)
-            errors = self.class.merge_errors(errors, key.zip(new_value.raw_errors).to_h)
+            errors = Utils.merge_errors(errors, key.zip(new_value.raw_errors).to_h)
           else
-            errors = self.class.merge_errors(errors, {key => new_value.raw_errors})
+            errors = Utils.merge_errors(errors, {key => new_value.raw_errors})
           end
         end
       end

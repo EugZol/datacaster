@@ -9,12 +9,12 @@ module Datacaster
     def cast(object, runtime:)
       result = Runtimes::Base.(runtime, @cast, object)
 
-      raise TypeError.new("Either Datacaster::Result or Dry::Monads::Result " \
-        "should be returned from cast block") unless [Datacaster::Result, Dry::Monads::Result].any? { |k| result.is_a?(k) }
-
-      if result.is_a?(Dry::Monads::Result)
+      if defined?(Dry::Monads::Result) && result.is_a?(Dry::Monads::Result)
         result = result.success? ? Datacaster.ValidResult(result.value!) : Datacaster.ErrorResult(result.failure)
       end
+
+      raise TypeError.new("Either Datacaster::Result or Dry::Monads::Result " \
+        "should be returned from cast block") unless result.is_a?(Datacaster::Result)
 
       result
     end
