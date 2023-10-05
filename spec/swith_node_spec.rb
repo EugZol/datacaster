@@ -35,6 +35,25 @@ RSpec.describe Datacaster do
       expect(caster.(1).to_dry_result).to eq Failure(["is not Enumerable"])
     end
 
+    it 'performs switching with array' do
+      caster =
+        Datacaster.schema do
+          switch([:first, :second], ['first', 'second'] => transform { 1 }, 'else' => transform { 2 })
+        end
+
+      expect(caster.(first: 'first', second: 'second').to_dry_result).to eq Success(1)
+    end
+
+    it 'performs switching with nested array' do
+      caster =
+        Datacaster.schema do
+          switch([[:first, :second]], 'second' => transform { 1 }, 'else' => transform { 2 })
+        end
+
+      expect(caster.(first: { second: 'second' }).to_dry_result).to eq Success(1)
+
+    end
+
     it 'performs switching without shortcuts' do
       caster =
         Datacaster.schema do

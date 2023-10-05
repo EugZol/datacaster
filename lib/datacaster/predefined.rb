@@ -174,21 +174,41 @@ module Datacaster
       ContextNodes::PassIf.new(base)
     end
 
+    def attribute(*keys)
+      raise RuntimeError.new("provide keys to attribute, e.g. attribute(:key)") if keys.empty?
+
+      retrieve_attribute = -> (from, key) do
+        case key
+        when Array
+          key.reduce(from) { |acc, x| retrieve_attribute.(acc, x) }
+        else
+          from.public_send(key)
+        end
+      end
+
+      transform do |input|
+        result = keys.map { |key| retrieve_attribute.(input, key) }
+        keys.length == 1 ? result.first : result 
+      end
+    end
+
     def pick(*keys, strict: false)
       raise RuntimeError.new("provide keys to pick, e.g. pick(:key)") if keys.empty?
 
-      must_be(Enumerable) & transform { |value|
-        result =
-          keys.map do |key|
-            if value.respond_to?(:key?) && !value.key?(key)
-              Datacaster.absent
-            elsif value.respond_to?(:length) && key.is_a?(Integer) && key > 0 && key >= value.length
-              Datacaster.absent
-            else
-              value[key]
-            end
-          end
+      retrieve_key = -> (from, key) do
+        if key.is_a?(Array) && strict == false
+          key.reduce(from) { |acc, x| retrieve_key.(acc, x) }
+        elsif from.respond_to?(:key?) && !from.key?(key)
+          Datacaster.absent
+        elsif from.respond_to?(:length) && key.is_a?(Integer) && key > 0 && key >= from.length
+          Datacaster.absent
+        else
+          from[key]
+        end
+      end
 
+      must_be(Enumerable) & transform { |value|
+        result = keys.map { |key| retrieve_key.(value, key) }
         keys.length == 1 ? result.first : result
       }
     end

@@ -9,7 +9,7 @@ module Datacaster
       when Datacaster::Base
         @base = base
       when String, Symbol, Array
-        @base = Datacaster::Predefined.pick(base)
+        @base = Datacaster::Predefined.pick(*base)
       else
         raise RuntimeError, "provide a Datacaster::Base instance, a hash key, or an array of keys to switch(...) caster", caller
       end

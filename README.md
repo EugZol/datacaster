@@ -686,7 +686,7 @@ Returns ValidResult if and only if base returns ValidResult. Returns base's erro
 
 Doesn't transform the value: if base succeeds returns the original value (not the one that base returned).
 
-#### `pick(key)`
+#### `pick(key, strict: false)`
 
 Returns ValidResult if and only if the value `#is_a?(Enumerable)`.
 
@@ -718,9 +718,82 @@ pick_name_and_age.(last_name: "Johnson", age: 20) # => Datacaster::ValidResult([
 pick_name_and_age.("test")                        # => Datacaster::ErrorResult(["is not Enumerable"])
 ```
 
+If you need to access deep nested values use `Array` as a key:
+
+```ruby
+nested_hash_picker = Datacaster.schema { pick([:user, :age]) }
+
+nested_hash_picker.(user: { age: 21 })      # => Datacaster::ValidResult(21)
+nested_hash_picker.(user: { name: "Alex" }) # => Datacaster::ValidResult(#<Datacaster.absent>)
+```
+
+When you have hash with an array keys you can provide option `strict`
+
+```ruby
+nested_hash_picker = Datacaster.schema { pick([:user, :age], strict: true) }
+nested_hash_picker.([:user, :age] => 21) # => Datacaster::ValidResult(21)
+```
+
+
 I18n keys:
 
 * not a Enumerable – `'.must_be'`, `'datacaster.errors.must_be'`.
+
+#### `attribute(key)`
+
+Calls object method provided in `key`
+
+```ruby
+class User
+  def login
+    "Alex"
+  end
+end
+
+attribute_name = Datacaster.schema { attribute(:login) }
+
+attribute_name.(User.new)       # => Datacaster::ValidResult("Alex")
+attribute_name.("test")         # raises NoMethodError
+```
+
+Alternative form could be used: `pick(*keys)`.
+
+In this case, an array of results is returned, each element in which corresponds to the element in `keys` array (i.e. is an argument of the `attribute`) and evaluated in accordance with the above rules.
+
+```ruby
+class User
+  def login
+    "Alex"
+  end
+
+  def age
+    21
+  end
+end
+
+attribute_login_and_age = Datacaster.schema { attribute(:login, :age) }
+attribute_login_and_age.(User.new)       # => Datacaster::ValidResult(["Alex", 21])
+```
+
+If you need to access deep nested methods use `Array` as a key:
+
+```ruby
+class Book
+  def title
+   "Some title"
+  end
+end
+
+class User
+  def book
+    Book.new
+  end
+end
+
+nested_attribute_picker = Datacaster.schema { attribute([:book, :title]) }
+nested_attribute_picker.(User.new) # => #<Datacaster::ValidResult("Some title")>
+```
+
 
 #### `remove`
 
