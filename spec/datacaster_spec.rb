@@ -428,6 +428,34 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "and node with .steps(...)" do
+    subject do
+      described_class.schema do
+        steps(
+          string,
+          check { |x| x.length <= 5 },
+          compare("test")
+        )
+      end
+    end
+
+    it "returns Success when all are valid" do
+      expect(subject.("test").to_dry_result).to eq Success("test")
+    end
+
+    it "returns first ErrorResult, when first is ErrorResult" do
+      expect(subject.(:not_even_string).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns second ErrorResult, when second is ErrorResult" do
+      expect(subject.("too long").to_dry_result).to eq Failure(["is invalid"])
+    end
+
+    it "returns the last ErrorResult, when the last is ErrorResult" do
+      expect(subject.("tset").to_dry_result).to eq Failure(['does not equal "test"'])
+    end
+  end
+
   describe "or (|) node" do
     subject do
       described_class.schema { string | integer }

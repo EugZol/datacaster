@@ -5,7 +5,7 @@ module Datacaster
         super(base)
 
         unless %i[fail remove pass].include?(strategy)
-          raise ArgumentError.new("Strategy should be :fail (return error on extra keys), :remove (remove extra keys) or :pass (ignore presence of extra keys)")
+          raise ArgumentError.new("Strategy should be :fail (return error on extra keys), :remove (remove extra keys) or :pass (ignore presence of extra keys), instead got #{strategy.inspect}")
         end
 
         @strategy = strategy

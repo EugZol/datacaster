@@ -45,6 +45,14 @@ module Datacaster
       )
     end
 
+    def strict_hash_schema(fields, error_key = nil)
+      schema(hash_schema(fields, error_key))
+    end
+
+    def choosy_hash_schema(fields, error_key = nil)
+      choosy_schema(hash_schema(fields, error_key))
+    end
+
     def transform_to_hash(fields)
       HashMapper.new(fields.transform_values { |x| DefinitionDSL.expand(x) })
     end
@@ -54,15 +62,15 @@ module Datacaster
     end
 
     def schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :fail)
+      ContextNodes::StructureCleaner.new(base, :fail)
     end
 
     def choosy_schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :remove)
+      ContextNodes::StructureCleaner.new(base, :remove)
     end
 
     def partial_schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :pass)
+      ContextNodes::StructureCleaner.new(base, :pass)
     end
 
     # 'Meta' types
