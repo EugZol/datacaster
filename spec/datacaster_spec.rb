@@ -209,6 +209,12 @@ RSpec.describe Datacaster do
       expect(schema.(a: 2, b: 1).to_dry_result).to eq Failure(["a should be < b"])
     end
 
+    it "performs picks and transforms with nested shotrcut definition" do
+      schema = Datacaster.schema { relate([:a, :b], :<, [:c, :d]) }
+
+      expect(schema.(a: { b: 1 }, c: { d: 2 }).to_dry_result).to eq Success(a: { b: 1 }, c: { d: 2 })
+    end
+
     it "performs picks and transforms with full definition" do
       schema = Datacaster.schema { relate(transform(&:length), :==, transform_to_value(5)) }
 

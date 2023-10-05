@@ -111,7 +111,7 @@ module Datacaster
       additional_vars = {}
 
       {left: left, op: op, right: right}.each do |k, v|
-        if [String, Symbol, Integer].any? { |c| v.is_a?(c) }
+        if [String, Symbol, Integer, Array].any? { |c| v.is_a?(c) }
           additional_vars[k] = v
         elsif !Datacaster.instance?(v)
           raise RuntimeError, "expected #{k} to be String, Symbol, Integer or Datacaster::Base, but got #{v.inspect}", caller
