@@ -213,6 +213,7 @@ RSpec.describe Datacaster do
       schema = Datacaster.schema { relate([:a, :b], :<, [:c, :d]) }
 
       expect(schema.(a: { b: 1 }, c: { d: 2 }).to_dry_result).to eq Success(a: { b: 1 }, c: { d: 2 })
+      expect(schema.(a: { b: 2 }, c: { d: 1 }).to_dry_result).to eq Failure(["2 should be < 1"])
     end
 
     it "performs picks and transforms with full definition" do
@@ -1046,7 +1047,7 @@ RSpec.describe Datacaster do
     end
 
     context "when array keys are used" do
-      subject { Datacaster.schema { pick([:offer, :amount]) } }
+      subject { Datacaster.schema { attribute([:offer, :amount]) } }
 
       let (:mock_object) do
         Class.new do
@@ -1061,7 +1062,7 @@ RSpec.describe Datacaster do
       end
 
       it "returns values from nested hash" do
-        expect(subject.(offer: {amount: 5}).to_dry_result).to eq Success(5)
+        expect(subject.(mock_object.new).to_dry_result).to eq Success(5)
       end
     end
   end
