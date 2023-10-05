@@ -44,6 +44,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`pick(*keys)`](#pickkeys)
     - [`remove`](#remove)
     - [`responds_to(method, error_key = nil)`](#responds_tomethod-error_key--nil)
+    - [`with(key, caster)`](#withkey-caster)
     - [`transform_to_value(value)`](#transform_to_valuevalue)
   - ["Web-form" types](#web-form-types)
     - [`iso8601(error_key = nil)`](#iso8601error_key--nil)
@@ -762,6 +763,41 @@ Always returns ValidResult. Always returns `Datacaster.absent`.
 Returns ValidResult if and only if the value `#responds_to?(method)`. Doesn't transform the value.
 
 I18n keys: `error_key`, `'.responds_to'`, `'datacaster.errors.responds_to'`. Adds `reference` i18n variable, setting it to `method.to_s`.
+
+#### `with(key, caster)`
+
+Returns ValidResult if and only if value is enumerable and `caster` returns ValidResult. Transforms incoming hash, providing value described by `key` to `caster`, and putting its result back into the original hash.
+
+```ruby
+upcase_name =
+  Datacaster.schema do
+    with(:name, transform(&:upcase))
+  end
+
+upcase_name.(name: 'Josh')
+# => Datacaster::ValidResult({:name=>"JOSH"})
+```
+
+If an array is provided instead of string or Symbol for `key` argument, it is treated as array of key names for a deeply nested value:
+
+```ruby
+upcase_person_name =
+  Datacaster.schema do
+    with([:person, :name], transform(&:upcase))
+  end
+
+upcase_person_name.(person: {name: 'Josh'})
+# => Datacaster::ValidResult({:person=>{:name=>"JOSH"}})
+
+upcase_person_name.({})
+# => Datacaster::ErrorResult({:person=>["is not Enumerable"]})
+```
+
+Note that `Datacaster.absent` will be provided to `caster` if corresponding key is absent from the value.
+
+I18n keys:
+
+* is not enumerable – `'.must_be'`, `'datacaster.errors.must_be'`. Adds `reference` i18n variable, setting it to `"Enumerable"`.
 
 #### `transform_to_value(value)`
 

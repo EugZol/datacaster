@@ -27,9 +27,9 @@ module Datacaster
           unwrapped = new_value.valid? ? new_value.value : new_value.raw_errors
 
           if key.length != unwrapped.length
-            raise TypeError.new("When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
+            raise TypeError, "When using transform_to_hash([:a, :b, :c] => validator), validator should return Array "\
               "with number of elements equal to the number of elements in left-hand-side array.\n" \
-              "Got the following (values or errors) instead: #{keys.inspect} => #{values_or_errors.inspect}.")
+              "Got the following (values or errors) instead: #{key.inspect} => #{unwrapped.inspect}."
           end
         end
 

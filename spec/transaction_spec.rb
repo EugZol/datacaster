@@ -45,7 +45,7 @@ RSpec.describe Datacaster::Transaction do
         perform steps(
           unwrap,
           typecast,
-          transform_to_hash(email: pick(:email) & send_email)
+          with(:email, send_email)
         )
       end
 

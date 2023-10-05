@@ -1052,6 +1052,36 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "'with' typecasting" do
+    it "picks and puts back single key" do
+      schema = Datacaster.schema { with(:name, transform { |x| "#{x}-1" }) }
+      expect(schema.(name: 'Josh').to_dry_result).to eq Success(name: 'Josh-1')
+    end
+
+    it "puts ErrorResult under the same key" do
+      schema = Datacaster.schema { with(:name, integer) }
+      expect(schema.(name: 'Josh').to_dry_result).to eq Failure(name: ["is not an integer"])
+    end
+
+    it "picks and puts back deeply nested key" do
+      schema =
+        Datacaster.schema do
+          with([:person, :name], transform(&:upcase))
+        end
+
+      expect(schema.(person: {name: 'Josh'}).to_dry_result).to eq Success(person: {name: 'JOSH'})
+    end
+
+    it "returns absent when failed to pick" do
+      schema =
+        Datacaster.schema do
+          with([:person, :name, :first], any)
+        end
+
+        expect(schema.(person: {}).to_dry_result).to eq Failure(person: {name: ["is not Enumerable"]})
+    end
+  end
+
   describe "attribute mapping" do
     context "when non array keys are used" do
       subject { Datacaster.schema { attribute(:test) } }
