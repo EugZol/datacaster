@@ -30,5 +30,11 @@ module Datacaster
 
       result
     end
+
+    def pickable?(value)
+      is_literal = ->(v) { [String, Symbol, Integer].any? { |c| v.is_a?(c) } }
+      is_literal.(value) ||
+        value.is_a?(Array) && !value.empty? && value.all? { |v| is_literal.(v) }
+    end
   end
 end

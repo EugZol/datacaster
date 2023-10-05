@@ -89,6 +89,26 @@ module Datacaster
       check { |x| x != Datacaster.absent }.i18n_key(*error_keys)
     end
 
+    def attribute(*keys)
+      if keys.empty? || keys.any? { |k| !Datacaster::Utils.pickable?(k) }
+        raise RuntimeError, "each argument should be String, Symbol, Integer or an array thereof", caller
+      end
+
+      transform do |input|
+        result =
+          keys.map do |key|
+            Array(key).reduce(input) do |result, k|
+              if result.respond_to?(k)
+                result.public_send(k)
+              else
+                break Datacaster.absent
+              end
+            end
+          end
+        keys.length == 1 ? result.first : result
+      end
+    end
+
     def default(value, on: nil)
       transform do |x|
         if x == Datacaster.absent ||
@@ -100,107 +120,8 @@ module Datacaster
       end
     end
 
-    def transform_to_value(value)
-      transform { value }
-    end
-
-    # min_amount: has_relation(:min_amount, :>, :max_amount)
-
-    def relate(left, op, right, error_key: nil)
-      error_keys = ['.relate', 'datacaster.errors.relate']
-      additional_vars = {}
-
-      {left: left, op: op, right: right}.each do |k, v|
-        if [String, Symbol, Integer].any? { |c| v.is_a?(c) }
-          additional_vars[k] = v
-        elsif !Datacaster.instance?(v)
-          raise RuntimeError, "expected #{k} to be String, Symbol, Integer or Datacaster::Base, but got #{v.inspect}", caller
-        end
-      end
-
-      if op.is_a?(Integer)
-        raise RuntimeError, "expected op to be String, Symbol or Datacaster::Base, but got #{op.inspect}", caller
-      end
-
-      if [left, op, right].none? { |x| Datacaster.instance?(x) }
-        error_keys.unshift(".#{left}.#{op}.#{right}")
-      end
-      error_keys.unshift(error_key) if error_key
-
-      left = pick(left) unless Datacaster.instance?(left)
-      right = pick(right) unless Datacaster.instance?(right)
-      op_caster = op
-      unless Datacaster.instance?(op_caster)
-        op_caster = check { |(l, r)| l.respond_to?(op) && l.public_send(op, r) }
-      end
-
-      cast do |value|
-        left_result = left.(value)
-        next left_result unless left_result.valid?
-        i18n_var!(:left, left_result.value) unless additional_vars.key?(:left)
-
-        right_result = right.(value)
-        next right_result unless right_result.valid?
-        i18n_var!(:right, right_result.value) unless additional_vars.key?(:right)
-
-        result = op_caster.([left_result.value, right_result.value])
-        next Datacaster.ErrorResult([I18nValues::Key.new(error_keys)]) unless result.valid?
-
-        Datacaster.ValidResult(value)
-      end.i18n_vars(additional_vars)
-    end
-
-    def remove
-      transform { Datacaster.absent }
-    end
-
-    def pass
-      transform(&:itself)
-    end
-
-    def switch(*base, **on_clauses)
-      switch =
-        if base.length == 0
-          SwitchNode.new
-        else
-          SwitchNode.new(base)
-        end
-      on_clauses.reduce(switch) do |result, (k, v)|
-        result.on(k, v)
-      end
-    end
-
-    def pass_if(base)
-      ContextNodes::PassIf.new(base)
-    end
-
-    def pick(*keys, strict: false)
-      raise RuntimeError.new("provide keys to pick, e.g. pick(:key)") if keys.empty?
-
-      must_be(Enumerable) & transform { |value|
-        result =
-          keys.map do |key|
-            if value.respond_to?(:key?) && !value.key?(key)
-              Datacaster.absent
-            elsif value.respond_to?(:length) && key.is_a?(Integer) && key > 0 && key >= value.length
-              Datacaster.absent
-            else
-              value[key]
-            end
-          end
-
-        keys.length == 1 ? result.first : result
-      }
-    end
-
     def merge_message_keys(*keys)
       MessageKeysMerger.new(keys)
-    end
-
-    def responds_to(method, error_key = nil)
-      error_keys = ['.responds_to', 'datacaster.errors.responds_to']
-      error_keys.unshift(error_key) if error_key
-      check { |x| x.respond_to?(method) }.i18n_key(*error_keys, reference: method.to_s)
     end
 
     def must_be(klass, error_key = nil)
@@ -219,6 +140,117 @@ module Datacaster
           base.(x)
         end
       end
+    end
+
+    def pass
+      transform(&:itself)
+    end
+
+    def pass_if(base)
+      ContextNodes::PassIf.new(base)
+    end
+
+    def pick(*keys)
+      if keys.empty? || keys.any? { |k| !Datacaster::Utils.pickable?(k) }
+        raise RuntimeError, "each argument should be String, Symbol, Integer or an array thereof", caller
+      end
+
+      retrieve_key = -> (from, key) do
+        if from.respond_to?(:key?) && !from.key?(key)
+          Datacaster.absent
+        elsif from.respond_to?(:length) && key.is_a?(Integer) && key > 0 && key >= from.length
+          Datacaster.absent
+        elsif !from.respond_to?(:[])
+          Datacaster.absent
+        else
+          from[key]
+        end
+      end
+
+      must_be(Enumerable) & transform { |input|
+        result =
+          keys.map do |key|
+            Array(key).reduce(input) do |result, k|
+              result = retrieve_key.(result, k)
+              break result if result == Datacaster.absent
+              result
+            end
+          end
+        keys.length == 1 ? result.first : result
+      }
+    end
+
+    def relate(left, op, right, error_key: nil)
+      error_keys = ['.relate', 'datacaster.errors.relate']
+      additional_vars = {}
+
+      left_caster = left
+      if Datacaster::Utils.pickable?(left)
+        left_caster = pick(left)
+      elsif !Datacaster.instance?(left)
+        raise RuntimeError, "provide String, Symbol, Integer or array thereof instead of #{left.inspect}", caller
+      end
+
+      right_caster = right
+      if Datacaster::Utils.pickable?(right)
+        right_caster = pick(right)
+      elsif !Datacaster.instance?(right)
+        raise RuntimeError, "provide String, Symbol, Integer or array thereof instead of #{right.inspect}", caller
+      end
+
+      op_caster = op
+      if op.is_a?(String) || op.is_a?(Symbol)
+        op_caster = check { |(l, r)| l.respond_to?(op) && l.public_send(op, r) }
+      elsif !Datacaster.instance?(left)
+        raise RuntimeError, "provide String or Symbol instead of #{op.inspect}", caller
+      end
+
+      {left: left, op: op, right: right}.each do |k, v|
+        if [String, Symbol, Integer].any? { |c| v.is_a?(c) }
+          additional_vars[k] = v
+        end
+      end
+
+      if additional_vars.length == 3
+        error_keys.unshift(".#{left}.#{op}.#{right}")
+      end
+      error_keys.unshift(error_key) if error_key
+
+      cast do |value|
+        left_result = left_caster.(value)
+        next left_result unless left_result.valid?
+        i18n_var!(:left, left_result.value) unless additional_vars.key?(:left)
+
+        right_result = right_caster.(value)
+        next right_result unless right_result.valid?
+        i18n_var!(:right, right_result.value) unless additional_vars.key?(:right)
+
+        result = op_caster.([left_result.value, right_result.value])
+        next Datacaster.ErrorResult([I18nValues::Key.new(error_keys)]) unless result.valid?
+
+        Datacaster.ValidResult(value)
+      end.i18n_vars(additional_vars)
+    end
+
+    def remove
+      transform { Datacaster.absent }
+    end
+
+    def responds_to(method, error_key = nil)
+      error_keys = ['.responds_to', 'datacaster.errors.responds_to']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.respond_to?(method) }.i18n_key(*error_keys, reference: method.to_s)
+    end
+
+    def switch(base = nil, **on_clauses)
+      switch = SwitchNode.new(base)
+      on_clauses.reduce(switch) do |result, (k, v)|
+        result.on(k, v)
+      end
+    end
+
+    def transform_to_value(value)
+      transform { value }
     end
 
     # Strict types

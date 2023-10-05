@@ -209,6 +209,12 @@ RSpec.describe Datacaster do
       expect(schema.(a: 2, b: 1).to_dry_result).to eq Failure(["a should be < b"])
     end
 
+    it "performs picks and transforms with nested shotrcut definition" do
+      schema = Datacaster.schema { relate([:a, :b], :<, [:c, :d]) }
+
+      expect(schema.(a: { b: 1 }, c: { d: 2 }).to_dry_result).to eq Success(a: { b: 1 }, c: { d: 2 })
+    end
+
     it "performs picks and transforms with full definition" do
       schema = Datacaster.schema { relate(transform(&:length), :==, transform_to_value(5)) }
 
@@ -985,26 +991,78 @@ RSpec.describe Datacaster do
   end
 
   describe "pick mapping" do
-    subject { Datacaster.schema { pick(0) } }
+    context "when non array keys are used" do
+      subject { Datacaster.schema { pick(0) } }
 
-    it "picks value from hash" do
-      expect(subject.(0 => :a).to_dry_result).to eq Success(:a)
+      it "picks value from hash" do
+        expect(subject.(0 => :a).to_dry_result).to eq Success(:a)
+      end
+
+      it "picks value from array" do
+        expect(subject.([:a]).to_dry_result).to eq Success(:a)
+      end
+
+      it "returns Absent if there is not any value" do
+        expect(subject.(1 => :b).to_dry_result).to eq Success(Datacaster.absent)
+      end
+
+      it "returns nil if the value is nil" do
+        expect(subject.(0 => nil).to_dry_result).to eq Success(nil)
+      end
+
+      it "returns failure if object is not enumerable" do
+        expect(subject.(1).to_dry_result).to eq Failure(["is not Enumerable"])
+      end
     end
 
-    it "picks value from array" do
-      expect(subject.([:a]).to_dry_result).to eq Success(:a)
+    context "when array keys are used" do
+      subject { Datacaster.schema { pick([:offer, :amount]) } }
+
+      it "returns values from nested hash" do
+        expect(subject.(offer: {amount: 5}).to_dry_result).to eq Success(5)
+      end
+    end
+  end
+
+  describe "attribute mapping" do
+    context "when non array keys are used" do
+      subject { Datacaster.schema { attribute(:test) } }
+
+      let(:mock_object) do
+        Class.new do
+          def test
+            "test"
+          end
+        end
+      end
+
+      it "takes attribute from object" do
+        expect(subject.(mock_object.new).to_dry_result).to eq Success("test")
+      end
+
+      it "returns Datacaster.absent if method is not available" do
+        expect(subject.(Class.new.new).to_dry_result).to eq Success(Datacaster.absent)
+      end
     end
 
-    it "returns Absent if there is not any value" do
-      expect(subject.(1 => :b).to_dry_result).to eq Success(Datacaster.absent)
-    end
+    context "when array keys are used" do
+      subject { Datacaster.schema { pick([:offer, :amount]) } }
 
-    it "returns nil if the value is nil" do
-      expect(subject.(0 => nil).to_dry_result).to eq Success(nil)
-    end
+      let (:mock_object) do
+        Class.new do
+          def offer
+            Class.new do
+              def amount
+                5
+              end
+            end.new
+          end
+        end
+      end
 
-    it "returns failure if object is not enumerable" do
-      expect(subject.(1).to_dry_result).to eq Failure(["is not Enumerable"])
+      it "returns values from nested hash" do
+        expect(subject.(offer: {amount: 5}).to_dry_result).to eq Success(5)
+      end
     end
   end
 
