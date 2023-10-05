@@ -56,6 +56,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`try(error_key = nil, catched_exception:) { |value| ... }`](#tryerror_key--nil-catched_exception--value--)
     - [`validate(active_model_validations, name = 'Anonymous')`](#validateactive_model_validations-name--anonymous)
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
+    - [`included_in(*reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
     - [`transform { |value| ... }`](#transform--value--)
     - [`transform_if_present { |value| ... }`](#transform_if_present--value--)
   - [Array schemas](#array-schemas)
@@ -882,8 +883,6 @@ I18n is performed by ActiveModel gem.
 
 #### `compare(reference_value, error_key = nil)`
 
-This type is the way to ensure some value in your schema is some predefined "constant".
-
 Returns ValidResult if and only if `reference_value` equals value.
 
 ```ruby
@@ -896,6 +895,12 @@ agreed_with_tos =
 ```
 
 I18n keys: `error_key`, `'.compare'`, `'datacaster.errors.compare'`. Adds `reference` i18n variable, setting it to `reference_value.to_s`.
+
+#### `included_in(*reference_values, error_key: nil)`
+
+Returns ValidResult if and only if `reference_values.include?` the value.
+
+I18n keys: `error_key`, `'.included_in'`, `'datacaster.errors.included_in'`. Adds `reference` i18n variable, setting it to `reference_values.map(&:to_s).join(', ')`.
 
 #### `transform { |value| ... }`
 
