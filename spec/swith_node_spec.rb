@@ -51,7 +51,6 @@ RSpec.describe Datacaster do
         end
 
       expect(caster.(first: { second: 'second' }).to_dry_result).to eq Success(1)
-
     end
 
     it 'performs switching without shortcuts' do
