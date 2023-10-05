@@ -1,16 +1,14 @@
 module Datacaster
   class SwitchNode < Base
     def initialize(base = nil, on_casters = [], else_caster = nil)
-      base = base[0] if base.is_a?(Array) && base.length == 1
+      @base = base
 
-      case base
-      when nil
-        @base = nil
-      when Datacaster::Base
-        @base = base
-      when String, Symbol, Array
-        @base = Datacaster::Predefined.pick(*base)
-      else
+      if Datacaster::Utils.pickable?(@base)
+        @base = Datacaster::Predefined.pick(@base)
+      end
+
+      if !@base.nil? && !Datacaster.instance?(@base)
+        puts @base.inspect
         raise RuntimeError, "provide a Datacaster::Base instance, a hash key, or an array of keys to switch(...) caster", caller
       end
 

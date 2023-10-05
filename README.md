@@ -34,13 +34,14 @@ It is currently used in production in several projects (mainly as request parame
   - [Special types](#special-types)
     - [`absent(error_key = nil, on: nil)`](#absenterror_key--nil-on-nil)
     - [`any(error_key = nil)`](#anyerror_key--nil)
+    - [`attribute(*keys)`](#attributekeys)
     - [`default(default_value, on: nil)`](#defaultdefault_value-on-nil)
     - [`merge_message_keys(*keys)`](#merge_message_keyskeys)
     - [`must_be(klass, error_key = nil)`](#must_beklass-error_key--nil)
     - [`optional(base, on: nil)`](#optionalbase-on-nil)
     - [`pass`](#pass)
     - [`pass_if(base)`](#pass_ifbase)
-    - [`pick(key)`](#pickkey)
+    - [`pick(*keys)`](#pickkeys)
     - [`remove`](#remove)
     - [`responds_to(method, error_key = nil)`](#responds_tomethod-error_key--nil)
     - [`transform_to_value(value)`](#transform_to_valuevalue)
@@ -523,6 +524,26 @@ Returns ValidResult if and only if provided value is not `Datacaster.absent` (th
 
 I18n keys: `error_key`, `'.any'`, `'datacaster.errors.any'`
 
+#### `attribute(*keys)`
+
+Always returns ValidResult. Calls provided method(s) (recursively) on the value and returns their results. `*keys` should be specified in exactly the same manner as in [pick](#pickkeys).
+
+```ruby
+class User
+  def login
+    "Alex"
+  end
+end
+
+login = Datacaster.schema { attribute(:login) }
+
+# => Datacaster::ValidResult("Alex")
+login.(User.new)
+
+# => Datacaster::ValidResult(#<Datacaster.absent>)
+login.("test")
+```
+
 #### `default(default_value, on: nil)`
 
 Always returns ValidResult.
@@ -633,7 +654,7 @@ mapping.(
 
 See also `#cast_errors` for [error remapping](#error-remapping-cast_errors).
 
-See also `#pick` for [simpler picking of hash values](#pickkey).
+See also `#pick` for [simpler picking of hash values](#pickkeys).
 
 I18n keys:
 
@@ -686,15 +707,18 @@ Returns ValidResult if and only if base returns ValidResult. Returns base's erro
 
 Doesn't transform the value: if base succeeds returns the original value (not the one that base returned).
 
-#### `pick(key, strict: false)`
+#### `pick(*keys)`
 
 Returns ValidResult if and only if the value `#is_a?(Enumerable)`.
 
-Transforms the value to/returns:
+Each argument should be a string, a Symbol, an integer or an array thereof. Each argument plays the role of key(s) to fetch from the value:
 
-* `value[key]` if key is set in the value
-* `nil` if `value[key]` is set and is nil
-* `Datacaster.absent` if key is not set
+* If the argument is an Array, value is extracted recursively
+* Otherwise, `value[argument]` is fetched and added to the result (or `Datacaster.absent` if is is impossible to fetch)
+
+If only one argument is provided to the `pick`, one fetched value is returned. If several arguments are provided, array is returned wherein each value corresponds to each argument.
+
+Fetching single key:
 
 ```ruby
 pick_name = Datacaster.schema { pick(:name) }
@@ -705,9 +729,7 @@ pick_name.(last_name: "Johnson") # => Datacaster::ValidResult(#<Datacaster.absen
 pick_name.("test")               # => Datacaster::ErrorResult(["is not Enumerable"])
 ```
 
-Alternative form could be used: `pick(*keys)`.
-
-In this case, an array of results is returned, each element in which corresponds to the element in `keys` array (i.e. is an argument of the `pick`) and evaluated in accordance with the above rules.
+Fetching multiple keys:
 
 ```ruby
 pick_name_and_age = Datacaster.schema { pick(:name, :age) }
@@ -718,7 +740,7 @@ pick_name_and_age.(last_name: "Johnson", age: 20) # => Datacaster::ValidResult([
 pick_name_and_age.("test")                        # => Datacaster::ErrorResult(["is not Enumerable"])
 ```
 
-If you need to access deep nested values use `Array` as a key:
+Fetching deeply nested key:
 
 ```ruby
 nested_hash_picker = Datacaster.schema { pick([:user, :age]) }
@@ -727,73 +749,9 @@ nested_hash_picker.(user: { age: 21 })      # => Datacaster::ValidResult(21)
 nested_hash_picker.(user: { name: "Alex" }) # => Datacaster::ValidResult(#<Datacaster.absent>)
 ```
 
-When you have hash with an array keys you can provide option `strict`
-
-```ruby
-nested_hash_picker = Datacaster.schema { pick([:user, :age], strict: true) }
-nested_hash_picker.([:user, :age] => 21) # => Datacaster::ValidResult(21)
-```
-
-
 I18n keys:
 
 * not a Enumerable – `'.must_be'`, `'datacaster.errors.must_be'`.
-
-#### `attribute(key)`
-
-Calls object method provided in `key`
-
-```ruby
-class User
-  def login
-    "Alex"
-  end
-end
-
-attribute_name = Datacaster.schema { attribute(:login) }
-
-attribute_name.(User.new)       # => Datacaster::ValidResult("Alex")
-attribute_name.("test")         # raises NoMethodError
-```
-
-Alternative form could be used: `pick(*keys)`.
-
-In this case, an array of results is returned, each element in which corresponds to the element in `keys` array (i.e. is an argument of the `attribute`) and evaluated in accordance with the above rules.
-
-```ruby
-class User
-  def login
-    "Alex"
-  end
-
-  def age
-    21
-  end
-end
-
-attribute_login_and_age = Datacaster.schema { attribute(:login, :age) }
-attribute_login_and_age.(User.new)       # => Datacaster::ValidResult(["Alex", 21])
-```
-
-If you need to access deep nested methods use `Array` as a key:
-
-```ruby
-class Book
-  def title
-   "Some title"
-  end
-end
-
-class User
-  def book
-    Book.new
-  end
-end
-
-nested_attribute_picker = Datacaster.schema { attribute([:book, :title]) }
-nested_attribute_picker.(User.new) # => #<Datacaster::ValidResult("Some title")>
-```
-
 
 #### `remove`
 
@@ -1395,7 +1353,7 @@ Note: in the "root" scope (immediately inside of `schema { ... }` block) the wor
 
 ### Mapping hashes: `transform_to_hash`
 
-One common task in processing compound data structures is to map one set of hash keys to another set. That's where `transform_to_hash` type comes to play (see also [`pick`](#pickkey) and [`remove`](#remove)).
+One common task in processing compound data structures is to map one set of hash keys to another set. That's where `transform_to_hash` type comes to play (see also [`pick`](#pickkeys) and [`remove`](#remove)).
 
 ```ruby
 city_with_distance =

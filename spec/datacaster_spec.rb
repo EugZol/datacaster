@@ -1040,8 +1040,8 @@ RSpec.describe Datacaster do
         expect(subject.(mock_object.new).to_dry_result).to eq Success("test")
       end
 
-      it "raises error if object doesn't responds to method" do
-        expect { subject.(Class.new.new).to_dry_result }.to raise_error(NoMethodError)
+      it "returns Datacaster.absent if method is not available" do
+        expect(subject.(Class.new.new).to_dry_result).to eq Success(Datacaster.absent)
       end
     end
 
