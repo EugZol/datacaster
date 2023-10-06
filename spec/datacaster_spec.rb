@@ -1409,6 +1409,44 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "using datacaster schema shotrcut" do
+    it "works with schema" do
+      subject = described_class.partial_schema do
+        schema(
+          hash_schema(
+            name: string
+          )
+        )
+      end
+
+      expect(subject.(name: "test", surname: "asd").to_dry_result).to eq Failure(surname: ["must be absent"])
+    end
+
+    it "works with partial_schema" do
+      subject = described_class.partial_schema do
+        partial_schema(
+          hash_schema(
+            name: string
+          )
+        )
+      end
+
+      expect(subject.(name: "test", surname: "asd").to_dry_result).to eq Success(name: "test", surname: "asd")
+    end
+
+    it "works with choosy_schema" do
+      subject = described_class.partial_schema do
+        choosy_schema(
+          hash_schema(
+            name: string
+          )
+        )
+      end
+
+      expect(subject.(name: "test", surname: "asd").to_dry_result).to eq Success(name: "test")
+    end
+  end
+
   describe "adding custom casters" do
     it "adds custom caster via lambda definition" do
       Datacaster::Config.add_predefined_caster(:time_string, -> {
@@ -1429,6 +1467,17 @@ RSpec.describe Datacaster do
 
       expect(schema.("#123456").to_dry_result).to eq Success("#123456")
       expect(schema.("no_css_color").to_dry_result).to eq Failure(["is invalid"])
+    end
+
+    it "works with parameter in caster" do
+      Datacaster::Config.add_predefined_caster(:super_compare, -> (param) {
+        compare("super_#{param}")
+      })
+
+      schema = Datacaster.schema { super_compare(:test) }
+
+      expect(schema.("super_test").to_dry_result).to eq Success("super_test")
+      expect(schema.("no_super_test").to_dry_result).to eq Failure(["does not equal \"super_test\""])
     end
   end
 end

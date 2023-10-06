@@ -54,15 +54,15 @@ module Datacaster
     end
 
     def schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :fail)
+      ContextNodes::StructureCleaner.new(base, :fail)
     end
 
     def choosy_schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :remove)
+      ContextNodes::StructureCleaner.new(base, :remove)
     end
 
     def partial_schema(base)
-      ContextNodes::StructureCleaner.new(base, strategy: :pass)
+      ContextNodes::StructureCleaner.new(base, :pass)
     end
 
     # 'Meta' types
