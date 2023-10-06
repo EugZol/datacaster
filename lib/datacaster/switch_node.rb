@@ -8,7 +8,6 @@ module Datacaster
       end
 
       if !@base.nil? && !Datacaster.instance?(@base)
-        puts @base.inspect
         raise RuntimeError, "provide a Datacaster::Base instance, a hash key, or an array of keys to switch(...) caster", caller
       end
 
