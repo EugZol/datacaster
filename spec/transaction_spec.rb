@@ -67,10 +67,13 @@ RSpec.describe Datacaster::Transaction do
         ) }
 
         define_steps do
-          def unwrap = transform { |x| x.to_h }
-          def typecast = hash_schema(name: string, email: string)
-          def send_email = transform do |email|
-            {address: email, result: true}
+          # Ruby 3: def unwrap = ...
+          def unwrap; transform { |x| x.to_h }; end
+          def typecast; hash_schema(name: string, email: string); end
+          def send_email
+            transform do |email|
+              {address: email, result: true}
+            end
           end
         end
       end
