@@ -213,6 +213,7 @@ RSpec.describe Datacaster do
       schema = Datacaster.schema { relate([:a, :b], :<, [:c, :d]) }
 
       expect(schema.(a: { b: 1 }, c: { d: 2 }).to_dry_result).to eq Success(a: { b: 1 }, c: { d: 2 })
+      expect(schema.(a: { b: 2 }, c: { d: 1 }).to_dry_result).to eq Failure(["2 should be < 1"])
     end
 
     it "performs picks and transforms with full definition" do
