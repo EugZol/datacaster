@@ -415,6 +415,7 @@ Notice that shortcut definitions are available (illustrated in the example above
 
 * `switch(:key)` is exactly the same as `switch(pick(:key))` (works for a string, a symbol, or an array thereof)
 * `on(:key, ...)` is exactly the same as `on(compare(:key), ...)` (works for a string or a symbol)
+* `on(:key, ...)` will match on `:key` and `'key'` value, and the same is true for `on('key', ...)` (to disable that behavior provide `strict: true` keyword arg: `on('key', ..., strict: true)`)
 * `switch([caster], on_check => on_caster, ...)` is exactly the same as `switch([caster]).on(on_check, on_caster).on(...)`
 
 `switch()` without a `base` argument will pass the incoming value to the `.on(...)` casters.
