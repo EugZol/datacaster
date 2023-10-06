@@ -7,17 +7,14 @@ module Datacaster
     attr_accessor :i18n_module
 
     def add_predefined_caster(name, definition)
-      caster =
-        case definition
-        when Proc
-          Datacaster.partial_schema(&definition)
-        when Base
-          definition
-        else
-          raise ArgumentError.new("Expected Datacaster defintion lambda or Datacaster instance")
-        end
-
-      Predefined.define_method(name.to_sym) { caster }
+      case definition
+      when Proc
+        Predefined.define_method(name.to_sym, &definition)
+      when Base
+        Predefined.define_method(name.to_sym) { definition }
+      else
+        raise ArgumentError.new("Expected Datacaster defintion lambda or Datacaster instance")
+      end
     end
 
     def i18n_t
