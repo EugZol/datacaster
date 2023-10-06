@@ -1,16 +1,45 @@
 module Datacaster
   module Transaction
     module ClassMethods
-      def perform(caster)
-        @_caster = ContextNodes::StructureCleaner.new(caster, :fail)
+      def _caster
+        if @_block
+          @_caster = ContextNodes::StructureCleaner.new(@_block.(), @_strategy)
+          @_block = nil
+          @_strategy = nil
+        end
+        @_caster
       end
 
-      def perform_partial(caster)
-        @_caster = ContextNodes::StructureCleaner.new(caster, :pass)
+      def _perform(caster, strategy, &block)
+        if [caster, block].count(nil) != 1
+          raise RuntimeError, "provide either a caster as single argument, or just a block to `perform(...)` or `perform_*(...)` call", caller
+        end
+
+        if block
+          @_block = block
+          @_strategy = strategy
+          @_caster = nil
+        else
+          @_block = nil
+          @_strategy = nil
+          @_caster = ContextNodes::StructureCleaner.new(caster, strategy)
+        end
       end
 
-      def perform_choosy(caster)
-        @_caster = ContextNodes::StructureCleaner.new(caster, :remove)
+      def perform(caster = nil, &block)
+        _perform(caster, :fail, &block)
+      end
+
+      def perform_partial(caster = nil, &block)
+        _perform(caster, :pass, &block)
+      end
+
+      def perform_choosy(caster = nil, &block)
+        _perform(caster, :remove, &block)
+      end
+
+      def define_steps(&block)
+        instance_eval(&block)
       end
 
       def call(*args, **kwargs)
@@ -25,7 +54,7 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      self.class.instance_variable_get(:@_caster).
+      self.class._caster.
         with_runtime(runtime).
         (object)
     end

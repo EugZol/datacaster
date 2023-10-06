@@ -54,4 +54,30 @@ RSpec.describe Datacaster::Transaction do
       email: {address: 'john@example.org', result: true}
     )
   end
+
+  it "allows to define steps in a block" do
+    tx =
+      Class.new do
+        include Datacaster::Transaction
+
+        perform { steps(
+          unwrap,
+          typecast,
+          with(:email, send_email)
+        ) }
+
+        define_steps do
+          def unwrap = transform { |x| x.to_h }
+          def typecast = hash_schema(name: string, email: string)
+          def send_email = transform do |email|
+            {address: email, result: true}
+          end
+        end
+      end
+
+    expect(tx.(name: 'John', email: 'john@example.org').to_dry_result).to eq Success(
+      name: 'John',
+      email: {address: 'john@example.org', result: true}
+    )
+  end
 end
