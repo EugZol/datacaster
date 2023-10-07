@@ -16,11 +16,18 @@ module Datacaster
       @else = else_caster
     end
 
-    def on(caster_or_value, clause)
+    def on(caster_or_value, clause, strict: false)
       caster =
         case caster_or_value
         when Datacaster::Base
           caster_or_value
+        when String, Symbol
+          if strict
+            Datacaster::Predefined.compare(caster_or_value)
+          else
+            Datacaster::Predefined.compare(caster_or_value.to_s) |
+              Datacaster::Predefined.compare(caster_or_value.to_sym)
+          end
         else
           Datacaster::Predefined.compare(caster_or_value)
         end
