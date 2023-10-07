@@ -25,7 +25,7 @@ module Datacaster
     end
 
     def self.eval(&block)
-      new.instance_exec(&block)
+      new.instance_eval(&block)
     end
 
     def method_missing(m, *args)

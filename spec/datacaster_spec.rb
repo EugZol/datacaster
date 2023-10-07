@@ -1538,4 +1538,16 @@ RSpec.describe Datacaster do
       expect(schema.("no_super_test").to_dry_result).to eq Failure(["does not equal \"super_test\""])
     end
   end
+
+  describe "cleaning nested schemas" do
+    it "doesn't complain on keys checked in nested contex node" do
+      schema = Datacaster.schema do
+        Datacaster.schema do
+          hash_schema(a: integer, b: integer)
+        end & hash_schema(b: integer)
+      end
+
+      expect(schema.(a: 1, b: 2).to_dry_result).to eq Success(a: 1, b: 2)
+    end
+  end
 end

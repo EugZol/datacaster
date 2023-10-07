@@ -27,6 +27,10 @@ module Datacaster
       ContextNodes::UserContext.new(self, context)
     end
 
+    def with_object_context(object)
+      ContextNodes::ObjectContext.new(self, object)
+    end
+
     def call(object)
       call_with_runtime(object, Runtimes::Base.new)
     end

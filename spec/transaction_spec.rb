@@ -84,25 +84,32 @@ RSpec.describe Datacaster::Transaction do
     )
   end
 
-  it "allows to define steps in a block" do
-    return pending
+  it "allows to use instance methods as steps" do
     tx =
       Class.new do
         include Datacaster::Transaction
 
-        transform_step :unwrap
-        cast_step typecast
-        cast_step with(:email, send_email)
-        perform { sequence(
-          unwrap,
-          typecast,
-          with(:email, send_email)
-        ) }
+        perform do
+          steps(
+            transformer(:unwrap),
+            caster(:typecast),
+            with(:email, transformer(:send_email))
+          )
+        end
 
-        steps.unwrap = transform { |x| x.to_h }
-        steps.typecast = hash_schema(name: string, email: string)
-        steps.send_email = transform do |email|
-          {address: email, result: true}
+        def unwrap(x)
+          @user_id = 123
+          x.to_h
+        end
+
+        def typecast(x)
+          Datacaster.partial_schema do
+            hash_schema(name: string, email: string)
+          end.(x)
+        end
+
+        def send_email(email)
+          {address: email, result: true, id: @user_id}
         end
       end
 

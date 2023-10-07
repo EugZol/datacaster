@@ -45,6 +45,14 @@ module Datacaster
       def call(*args, **kwargs)
         new.call(*args, **kwargs)
       end
+
+      def caster(m)
+        cast { |*args, **kwargs| send(m, *args, **kwargs) }
+      end
+
+      def transformer(m)
+        transform { |*args, **kwargs| send(m, *args, **kwargs) }
+      end
     end
 
     def self.included(base)
@@ -55,6 +63,7 @@ module Datacaster
 
     def cast(object, runtime:)
       self.class._caster.
+        with_object_context(self).
         with_runtime(runtime).
         (object)
     end
