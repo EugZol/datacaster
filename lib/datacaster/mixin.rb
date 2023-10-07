@@ -44,9 +44,22 @@ module Datacaster
     end
 
     def with_runtime(runtime)
-      ->(object) do
-        call_with_runtime(object, runtime)
+      result =
+        ->(object) do
+          call_with_runtime(object, runtime)
+        end
+
+      this = self
+
+      result.singleton_class.define_method(:with_runtime) do |new_runtime|
+        this.with_runtime(new_runtime)
       end
+
+      result.singleton_class.define_method(:without_runtime) do |new_runtime|
+        this
+      end
+
+      result
     end
 
     def i18n_key(*keys, **args)

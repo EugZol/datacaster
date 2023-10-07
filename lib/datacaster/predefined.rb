@@ -77,6 +77,12 @@ module Datacaster
       ContextNodes::StructureCleaner.new(base, :pass)
     end
 
+    # 'Around' types
+
+    def cast_around(&block)
+      AroundNodes::Caster.new(&block)
+    end
+
     # 'Meta' types
 
     def absent(error_key = nil, on: nil)

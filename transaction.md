@@ -58,11 +58,9 @@ Instead, of course, just `cast { m }` and so on could be used.
 
 Note that `steps` is a predefined Datacaster method (which works as `&`), and so is `with`. They are not Transaction-specific enhancements.
 
-## Around steps
+## Around steps with `cast_around`
 
-Transaction is a relatively light-weight module which builds on top of Datacaster itself, and so pure Ruby solutions are possible in several cases.
-
-One typical case is "around"-steps, e.g. performing a task inside database transaction. A class method would serve to do that:
+An experimental addition to Datacaster convenient for the use in Transaction is `cast_around` – a way to wrap a number of steps inside some kind of setup/rollback block, e.g. a database transaction.
 
 ```ruby
 class UserRegistration
@@ -71,7 +69,7 @@ class UserRegistration
   perform do
     steps(
       run { prepare },
-      inside_transaction(
+      inside_transaction.around(
         run { register },
         run { create_account }
       ),
@@ -79,18 +77,13 @@ class UserRegistration
     )
   end
 
-  private_class_method def self.inside_transaction(*casters)
-    cast do |value|
-      return_value = Datacaster::ValidResult(value)
-
+  define_steps do
+    def inside_transaction = cast_around do |value, inner|
       puts "DB transaction started"
-      casters.each do |caster|
-        return_value = caster.with_runtime(self).(return_value.value)
-        break unless return_value.valid?
-      end
+      result = inner.(value)
       puts "DB transaction ended"
 
-      return_value
+      result
     end
   end
 
@@ -121,4 +114,6 @@ UserRegistration.('a user object')
 # => #<Datacaster::ValidResult("a user object")>
 ```
 
-Notice that `.with_runtime(self)` should be called on a datacaster object. "Runtime" is a context (i.e. methods and instance variables) which is available inside caster blocks (and also used internally in Datacaster for several purposes). Naturally, `self` inside one of caster blocks is a "runtime" itself, so we just pass the runtime automatically created/managed by a Transaction (and passed by `steps` caster into particular steps behind the scenes) into manually created casters.
+As shown in the example, `cast_around { |value, inner| ...}.around(*casters)` works in the following manner: it yields incoming value as the first argument (`value`) and casters specified in `.around(...)` part as the second argument (`inner`) to the block given. Casters are automatically joined with `steps` if there are more than one.
+
+Block may call `steps.(value)` to execute casters in a regular manner. Block must return a kind of `Datacaster::Result`. `steps.(...)` will always return `Datacaster::Result`, so that result could be passed as a `cast_around` result, as shown in the example.
