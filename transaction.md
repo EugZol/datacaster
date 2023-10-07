@@ -65,7 +65,6 @@ Transaction is a relatively light-weight module which builds on top of Datacaste
 One typical case is "around"-steps, e.g. performing a task inside database transaction. A class method would serve to do that:
 
 ```ruby
-require_relative 'lib/datacaster'
 class UserRegistration
   include Datacaster::Transaction
 
