@@ -69,6 +69,33 @@ RSpec.describe Datacaster do
       expect(caster.('5').to_dry_result).to eq Success(5)
     end
 
+    it 'performs switching with string/symbol interchangebly' do
+      caster =
+        Datacaster.schema do
+          switch(:kind,
+            'person' => transform { 'person' },
+            :entity => transform { 'entity' }
+          )
+        end
+
+      expect(caster.(kind: 'person').to_dry_result).to eq Success('person')
+      expect(caster.(kind: :person).to_dry_result).to eq Success('person')
+      expect(caster.(kind: 'entity').to_dry_result).to eq Success('entity')
+      expect(caster.(kind: :entity).to_dry_result).to eq Success('entity')
+
+      caster =
+        Datacaster.schema do
+          switch(:kind).
+            on('person', transform { 'person' }, strict: true).
+            on(:entity, transform { 'entity' }, strict: true)
+        end
+
+      expect(caster.(kind: 'person').to_dry_result).to eq Success('person')
+      expect(caster.(kind: :person).to_dry_result).to eq Failure(['is invalid'])
+      expect(caster.(kind: 'entity').to_dry_result).to eq Failure(['is invalid'])
+      expect(caster.(kind: :entity).to_dry_result).to eq Success('entity')
+    end
+
     it 'returns error of switch caster' do
       caster =
         Datacaster.schema do
