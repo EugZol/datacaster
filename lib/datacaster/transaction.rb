@@ -50,6 +50,14 @@ module Datacaster
         cast { |*args, **kwargs| send(m, *args, **kwargs) }
       end
 
+      def checker(m)
+        check { |*args, **kwargs| send(m, *args, **kwargs) }
+      end
+
+      def comparator(m)
+        compare { |*args, **kwargs| send(m, *args, **kwargs) }
+      end
+
       def transformer(m)
         transform { |*args, **kwargs| send(m, *args, **kwargs) }
       end

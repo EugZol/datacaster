@@ -16,6 +16,10 @@ module Datacaster
       Comparator.new(value, error_key)
     end
 
+    def run(&block)
+      Runner.new(&block)
+    end
+
     def transform(&block)
       Transformer.new(&block)
     end

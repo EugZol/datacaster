@@ -60,6 +60,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
     - [`included_in(*reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
     - [`relate(left, op, right, error_key: nil)`](#relateleft-op-right-error_key-nil)
+    - [`run { |value| ... }`](#run--value--)
     - [`transform { |value| ... }`](#transform--value--)
     - [`transform_if_present { |value| ... }`](#transform_if_present--value--)
   - [Array schemas](#array-schemas)
@@ -1008,6 +1009,12 @@ Formally, `relate(left, op, right, error_key: error_key)` will:
 * call the `right` caster with the original value, return the result unless it's valid
 * call the `op` caster with the `[left_result, right_result]`, return the result unless it's valid
 * return the original value as valid result
+
+#### `run { |value| ... }`
+
+Always returns ValidResult. Doesn't transform the value.
+
+Useful to perform some side-effect such as raising an exception, making a log entry, etc.
 
 #### `transform { |value| ... }`
 
