@@ -89,7 +89,7 @@ RSpec.describe Datacaster::Transaction do
       Class.new do
         include Datacaster::Transaction
 
-        perform do
+        perform_partial do
           steps(
             transformer(:unwrap),
             caster(:typecast),
@@ -103,7 +103,7 @@ RSpec.describe Datacaster::Transaction do
         end
 
         def typecast(x)
-          Datacaster.partial_schema do
+          Datacaster.schema do
             hash_schema(name: string, email: string)
           end.(x)
         end
@@ -115,7 +115,7 @@ RSpec.describe Datacaster::Transaction do
 
     expect(tx.(name: 'John', email: 'john@example.org').to_dry_result).to eq Success(
       name: 'John',
-      email: {address: 'john@example.org', result: true}
+      email: {address: 'john@example.org', result: true, id: 123}
     )
   end
 end
