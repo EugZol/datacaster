@@ -287,7 +287,25 @@ even_number.("test")
 # => Datacaster::ErrorResult(["is not an integer"])
 ```
 
-If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation. See below in this file section on transformations where this might be relevant.
+If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation.
+
+Alternatively, `steps` caster could be used, which accepts any number of "steps" as arguments and joins them with `&` logic:
+
+```ruby
+even_number =
+  Datacaster.schema do
+    steps(
+      integer,
+      check { |x| x.even? },
+      transform { |x| x * 2 }
+    )
+  end
+
+even_number.(6)
+# => Datacaster::ValidResult(12)
+```
+
+Naturally, if one of the "steps" returns an error, process short-circuits and this error is returned as a result.
 
 #### *OR operator*
 
