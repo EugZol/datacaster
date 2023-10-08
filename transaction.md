@@ -14,7 +14,7 @@ class UserRegistration
     steps(
       transform(&prepare),
       typecast,
-      with(:email, transform { send_email })
+      with(:email, transform(&send_email))
     )
   end
 
