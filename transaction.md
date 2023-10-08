@@ -12,9 +12,9 @@ class UserRegistration
 
   perform do
     steps(
-      transformer(:prepare),
+      transform(&prepare),
       typecast,
-      with(:email, transformer(:send_email))
+      with(:email, transform { send_email })
     )
   end
 
@@ -44,19 +44,21 @@ UserRegistration.(name: 'John', email: 'john@example.org')
 
 Transaction is just a class which includes `Datacaster::Transaction`. Upon inclusion, all datacaster predefined methods are added as class methods.
 
-Call `.perform(a_caster)` or `.perform { a_caster }` (where `caster` is a Datacaster instance) to define how transaction performs. Transaction instance will behave as a normal datacaster (i.e. `a_caster` itself) with some enhancements.
+Call `.perform(a_caster)` or `.perform { a_caster }` (where `caster` is a Datacaster instance) to define transaction steps.
 
-Firstly, transaction class has `.call` method which will initialize instance (available only if `#initialize` doesn't have required arguments) and pass arguments to the instance's `#call`.
+Block form `perform { a_caster }` is used to defer definition of class methods (otherwise, they should've been written above `perform` in the code file). Block is eventually executed in a context of the class.
 
-Secondly, runtime-context for casters used in a transaction is the transaction instance itself. You can call transaction instance methods and get/set transaction instance variables inside blocks of `check { ... }`, `cast { ... }` and all the other predefined datacaster methods. That's why `@user_id` works in the example above.
+Transaction instance will behave as a normal datacaster (i.e. `a_caster` itself) with the following enhancements:
 
-Thirdly, convenience method `define_steps` is added, which is just a better looking `class << self`.
+1\. Transaction class has `.call` method which will initialize instance (available only if `#initialize` doesn't have required arguments) and pass arguments to the instance's `#call`.
 
-Lastly, convenience methods `caster(:m)`, `checker(:m)`, `comparator(:m)`, `transformer(:m)` are added. These methods create a `cast { ... }`, `check { ... }`, `compare { ... }` or `transform { ... }` caster from the transaction's instance method `m`.
+2\. Runtime-context for casters used in a transaction is the transaction instance itself. You can call transaction instance methods and get/set transaction instance variables inside blocks of `check { ... }`, `cast { ... }` and all the other predefined datacaster methods. That's why `@user_id` works in the example above.
 
-Instead, of course, just `cast { m }` and so on could be used.
+3\. Convenience method `define_steps` is added, which is just a better looking `class << self`.
 
-Note that `steps` is a predefined Datacaster method (which works as `&`), and so is `with`. They are not Transaction-specific enhancements.
+4\. If class method is not found, it is automatically converted (with class `method_missing`) to deferred instance method call. In the example above, `.prepare` class method is not defined. However, `perform` block executes in a class context and tries to look that method up. Instead, proc `->(value) { self.perfrom(value) }` is returned – a deferred instance method call (which is passed as block to standard `transform` datacaster).
+
+Note that `steps` is a predefined Datacaster method (which works as `&`), and so is `transform` and `with`. They are not Transaction-specific enhancements.
 
 ## Around steps with `cast_around`
 
@@ -117,3 +119,5 @@ UserRegistration.('a user object')
 As shown in the example, `cast_around { |value, inner| ...}.around(*casters)` works in the following manner: it yields incoming value as the first argument (`value`) and casters specified in `.around(...)` part as the second argument (`inner`) to the block given. Casters are automatically joined with `steps` if there are more than one.
 
 Block may call `steps.(value)` to execute casters in a regular manner. Block must return a kind of `Datacaster::Result`. `steps.(...)` will always return `Datacaster::Result`, so that result could be passed as a `cast_around` result, as shown in the example.
+
+Note that `run` is a predefined Datacaster method, not specific to Transaction.

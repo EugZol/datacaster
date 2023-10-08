@@ -91,9 +91,9 @@ RSpec.describe Datacaster::Transaction do
 
         perform_partial do
           steps(
-            transformer(:unwrap),
-            caster(:typecast),
-            with(:email, transformer(:send_email))
+            transform(&unwrap),
+            cast(&typecast),
+            with(:email, transform(&send_email))
           )
         end
 

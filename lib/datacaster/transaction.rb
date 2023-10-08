@@ -42,24 +42,18 @@ module Datacaster
         instance_eval(&block)
       end
 
+      def method_missing(m, *args, **kwargs)
+        return super unless args.empty? && kwargs.empty?
+        return super unless method_defined?(m)
+        method = instance_method(m)
+        return super unless method.arity == 1
+
+        # convert immediate class method call to lazy instance method call
+        ->(*args, **kwargs) { send(m, *args, **kwargs) }
+      end
+
       def call(*args, **kwargs)
         new.call(*args, **kwargs)
-      end
-
-      def caster(m)
-        cast { |*args, **kwargs| send(m, *args, **kwargs) }
-      end
-
-      def checker(m)
-        check { |*args, **kwargs| send(m, *args, **kwargs) }
-      end
-
-      def comparator(m)
-        compare { |*args, **kwargs| send(m, *args, **kwargs) }
-      end
-
-      def transformer(m)
-        transform { |*args, **kwargs| send(m, *args, **kwargs) }
       end
     end
 
