@@ -9,6 +9,22 @@ module Datacaster
       @valid = !!valid
     end
 
+    def value_or(*values, &block)
+      if values.length > 1 || (values.length == 1 && block_given?)
+        raise RuntimeError, "provide either value or block: #or(value), #or { block }", caller
+      end
+
+      if valid?
+        value
+      else
+        if values.length == 1
+          values[0]
+        else
+          block.(errors)
+        end
+      end
+    end
+
     def valid?
       @valid
     end

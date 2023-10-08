@@ -1,5 +1,14 @@
 module Datacaster
   module Transaction
+    class StepErrorResult < RuntimeError
+      attr_accessor :result
+
+      def initialize(result)
+        super(result.inspect)
+        @result = result
+      end
+    end
+
     module ClassMethods
       def _caster
         if @_block
@@ -64,10 +73,43 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      self.class._caster.
+      if respond_to?(:perform)
+        @runtime = runtime
+        begin
+          result = perform(object)
+        rescue StepErrorResult => e
+          return e.result
+        end
+        @runtime = nil
+        return result
+      end
+
+      caster = self.class._caster
+      unless caster
+        raise RuntimeError, "define #perform (#perform_partial, #perform_choosy) method " \
+          "or call .perform(caster) or .perform { caster } beforehand", caller
+      end
+      caster.
         with_object_context(self).
         with_runtime(runtime).
         (object)
+    end
+
+    def step(arg = nil, &block)
+      result = Datacaster::Predefined.cast(&block).
+        with_object_context(self).
+        with_runtime(@runtime).
+        (arg)
+    end
+
+    def step!(arg = nil, &block)
+      result = step(arg, &block)
+
+      if result.valid?
+        result.value
+      else
+        raise StepErrorResult.new(result)
+      end
     end
   end
 end

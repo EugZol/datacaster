@@ -14,7 +14,7 @@ module Datacaster
       end
 
       raise TypeError.new("Either Datacaster::Result or Dry::Monads::Result " \
-        "should be returned from cast block") unless result.is_a?(Datacaster::Result)
+        "should be returned from cast block, instead got #{result.inspect}") unless result.is_a?(Datacaster::Result)
 
       result
     end

@@ -118,4 +118,53 @@ RSpec.describe Datacaster::Transaction do
       email: {address: 'john@example.org', result: true, id: 123}
     )
   end
+
+  it "allows imperative-style notation" do
+    tx =
+      Class.new do
+        include Datacaster::Transaction
+
+        def perform(value)
+          value = unwrap(value)
+          value = step! { typecast(value) }
+          value[:email] = step { check_email(value[:email]) }.value_or("/dev/null")
+          value[:email] = send_email(value[:email])
+
+          Datacaster.ValidResult(value)
+        end
+
+        def unwrap(x)
+          @user_id = 123
+          x.to_h
+        end
+
+        def typecast(x)
+          Datacaster.schema do
+            hash_schema(name: string, email: string)
+          end.(x)
+        end
+
+        def check_email(email)
+          Datacaster.schema { check { |email| email == 'john@example.org' } }.(email)
+        end
+
+        def send_email(email)
+          {address: email, result: true, id: @user_id}
+        end
+      end
+
+    expect(tx.(name: 'John', email: 'john@example.org').to_dry_result).to eq Success(
+      name: 'John',
+      email: {address: 'john@example.org', result: true, id: 123}
+    )
+
+    expect(tx.(name: 'John', email: 5).to_dry_result).to eq Failure(
+      email: ['is not a string']
+    )
+
+    expect(tx.(name: 'John', email: 'abc').to_dry_result).to eq Success(
+      name: 'John',
+      email: {address: '/dev/null', result: true, id: 123}
+    )
+  end
 end
