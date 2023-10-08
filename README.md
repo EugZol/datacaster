@@ -167,11 +167,15 @@ It is worth noting that in `a & b` validation composition as above, if `a` in so
 
 All datacaster validations, when called, return an instance of `Datacaster::Result` value, i.e. `Datacaster::ValidResult` or `Datacaster::ErrorResult`.
 
-You can call `#valid?`, `#value`, `#errors` methods directly, or, if preferred, call `#to_dry_result` method to convert `Datacaster::Result` to the corresponding `Dry::Monads::Result` (with all the included "batteries" of the latter, e.g. pattern matching, 'binding', etc.).
+You can call `#valid?`, `#value`, `#errors` methods directly, or, if preferred, call `#to_dry_result` method to convert `Datacaster::Result` to the corresponding `Dry::Monads::Result`.
 
-`#value` and `#errors` would return `#nil` if the result is, correspondingly, `ErrorResult` and `ValidResult`. No methods would raise an error.
+`#value` and `#errors` would return `#nil` if the result is, correspondingly, `ErrorResult` and `ValidResult`.
 
-Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Errors support internationalization (i18n) natively. Each element of the returned array shows a separate error as a special i18n value object, and each key of the returned hash corresponds to the key of the validated hash.
+`#value!` would return value for `ValidResult` and raise an error for `ErrorResult`.
+
+`#value_or(another_value)` and `#value_or { |errors| another_value }` would return value for `ValidResult` and `another_value` for `ErrorResult`.
+
+Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Errors support internationalization (i18n) natively. Each element of the returned array shows a separate error as a special i18n value object, and each key of the returned hash corresponds to the key of the validated hash. When calling `#errors` those i18n value objects are converted to strings using the configured/detected I18n backend (Rails or `ruby-i18n`).
 
 In this README, instead of i18n values English strings are provided for brevity:
 
