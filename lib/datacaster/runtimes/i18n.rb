@@ -6,6 +6,8 @@ module Datacaster
       def initialize(*)
         super
         @args = {}
+
+        @reserved_instance_variables += instance_variables
       end
 
       def i18n_var!(name, value)

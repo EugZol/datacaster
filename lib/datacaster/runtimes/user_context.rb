@@ -29,6 +29,8 @@ module Datacaster
       def initialize(parent, user_context)
         super(parent)
         @context_struct = ContextStruct.new(user_context, self)
+
+        @reserved_instance_variables += instance_variables
       end
 
       def context

@@ -44,6 +44,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`pick(*keys)`](#pickkeys)
     - [`remove`](#remove)
     - [`responds_to(method, error_key = nil)`](#responds_tomethod-error_key--nil)
+    - [`with(key, caster)`](#withkey-caster)
     - [`transform_to_value(value)`](#transform_to_valuevalue)
   - ["Web-form" types](#web-form-types)
     - [`iso8601(error_key = nil)`](#iso8601error_key--nil)
@@ -59,6 +60,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
     - [`included_in(*reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
     - [`relate(left, op, right, error_key: nil)`](#relateleft-op-right-error_key-nil)
+    - [`run { |value| ... }`](#run--value--)
     - [`transform { |value| ... }`](#transform--value--)
     - [`transform_if_present { |value| ... }`](#transform_if_present--value--)
   - [Array schemas](#array-schemas)
@@ -165,11 +167,15 @@ It is worth noting that in `a & b` validation composition as above, if `a` in so
 
 All datacaster validations, when called, return an instance of `Datacaster::Result` value, i.e. `Datacaster::ValidResult` or `Datacaster::ErrorResult`.
 
-You can call `#valid?`, `#value`, `#errors` methods directly, or, if preferred, call `#to_dry_result` method to convert `Datacaster::Result` to the corresponding `Dry::Monads::Result` (with all the included "batteries" of the latter, e.g. pattern matching, 'binding', etc.).
+You can call `#valid?`, `#value`, `#errors` methods directly, or, if preferred, call `#to_dry_result` method to convert `Datacaster::Result` to the corresponding `Dry::Monads::Result`.
 
-`#value` and `#errors` would return `#nil` if the result is, correspondingly, `ErrorResult` and `ValidResult`. No methods would raise an error.
+`#value` and `#errors` would return `#nil` if the result is, correspondingly, `ErrorResult` and `ValidResult`.
 
-Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Errors support internationalization (i18n) natively. Each element of the returned array shows a separate error as a special i18n value object, and each key of the returned hash corresponds to the key of the validated hash.
+`#value!` would return value for `ValidResult` and raise an error for `ErrorResult`.
+
+`#value_or(another_value)` and `#value_or { |errors| another_value }` would return value for `ValidResult` and `another_value` for `ErrorResult`.
+
+Errors are returned as array or hash (or hash of arrays, or array of hashes, etc., for complex data structures). Errors support internationalization (i18n) natively. Each element of the returned array shows a separate error as a special i18n value object, and each key of the returned hash corresponds to the key of the validated hash. When calling `#errors` those i18n value objects are converted to strings using the configured/detected I18n backend (Rails or `ruby-i18n`).
 
 In this README, instead of i18n values English strings are provided for brevity:
 
@@ -285,7 +291,25 @@ even_number.("test")
 # => Datacaster::ErrorResult(["is not an integer"])
 ```
 
-If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation. See below in this file section on transformations where this might be relevant.
+If left-hand validation of AND operator passes, *its result* (not the original value) is passed to the right-hand validation.
+
+Alternatively, `steps` caster could be used, which accepts any number of "steps" as arguments and joins them with `&` logic:
+
+```ruby
+even_number =
+  Datacaster.schema do
+    steps(
+      integer,
+      check { |x| x.even? },
+      transform { |x| x * 2 }
+    )
+  end
+
+even_number.(6)
+# => Datacaster::ValidResult(12)
+```
+
+Naturally, if one of the "steps" returns an error, process short-circuits and this error is returned as a result.
 
 #### *OR operator*
 
@@ -764,6 +788,41 @@ Returns ValidResult if and only if the value `#responds_to?(method)`. Doesn't tr
 
 I18n keys: `error_key`, `'.responds_to'`, `'datacaster.errors.responds_to'`. Adds `reference` i18n variable, setting it to `method.to_s`.
 
+#### `with(key, caster)`
+
+Returns ValidResult if and only if value is enumerable and `caster` returns ValidResult. Transforms incoming hash, providing value described by `key` to `caster`, and putting its result back into the original hash.
+
+```ruby
+upcase_name =
+  Datacaster.schema do
+    with(:name, transform(&:upcase))
+  end
+
+upcase_name.(name: 'Josh')
+# => Datacaster::ValidResult({:name=>"JOSH"})
+```
+
+If an array is provided instead of string or Symbol for `key` argument, it is treated as array of key names for a deeply nested value:
+
+```ruby
+upcase_person_name =
+  Datacaster.schema do
+    with([:person, :name], transform(&:upcase))
+  end
+
+upcase_person_name.(person: {name: 'Josh'})
+# => Datacaster::ValidResult({:person=>{:name=>"JOSH"}})
+
+upcase_person_name.({})
+# => Datacaster::ErrorResult({:person=>["is not Enumerable"]})
+```
+
+Note that `Datacaster.absent` will be provided to `caster` if corresponding key is absent from the value.
+
+I18n keys:
+
+* is not enumerable – `'.must_be'`, `'datacaster.errors.must_be'`. Adds `reference` i18n variable, setting it to `"Enumerable"`.
+
 #### `transform_to_value(value)`
 
 Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). See also [`default`](#defaultdefault_value-on-nil).
@@ -972,6 +1031,12 @@ Formally, `relate(left, op, right, error_key: error_key)` will:
 * call the `right` caster with the original value, return the result unless it's valid
 * call the `op` caster with the `[left_result, right_result]`, return the result unless it's valid
 * return the original value as valid result
+
+#### `run { |value| ... }`
+
+Always returns ValidResult. Doesn't transform the value.
+
+Useful to perform some side-effect such as raising an exception, making a log entry, etc.
 
 #### `transform { |value| ... }`
 

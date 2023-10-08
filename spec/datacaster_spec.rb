@@ -429,6 +429,34 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "and node with .steps(...)" do
+    subject do
+      described_class.schema do
+        steps(
+          string,
+          check { |x| x.length <= 5 },
+          compare("test")
+        )
+      end
+    end
+
+    it "returns Success when all are valid" do
+      expect(subject.("test").to_dry_result).to eq Success("test")
+    end
+
+    it "returns first ErrorResult, when first is ErrorResult" do
+      expect(subject.(:not_even_string).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns second ErrorResult, when second is ErrorResult" do
+      expect(subject.("too long").to_dry_result).to eq Failure(["is invalid"])
+    end
+
+    it "returns the last ErrorResult, when the last is ErrorResult" do
+      expect(subject.("tset").to_dry_result).to eq Failure(['does not equal "test"'])
+    end
+  end
+
   describe "or (|) node" do
     subject do
       described_class.schema { string | integer }
@@ -1025,6 +1053,36 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "'with' typecasting" do
+    it "picks and puts back single key" do
+      schema = Datacaster.schema { with(:name, transform { |x| "#{x}-1" }) }
+      expect(schema.(name: 'Josh').to_dry_result).to eq Success(name: 'Josh-1')
+    end
+
+    it "puts ErrorResult under the same key" do
+      schema = Datacaster.schema { with(:name, integer) }
+      expect(schema.(name: 'Josh').to_dry_result).to eq Failure(name: ["is not an integer"])
+    end
+
+    it "picks and puts back deeply nested key" do
+      schema =
+        Datacaster.schema do
+          with([:person, :name], transform(&:upcase))
+        end
+
+      expect(schema.(person: {name: 'Josh'}).to_dry_result).to eq Success(person: {name: 'JOSH'})
+    end
+
+    it "returns absent when failed to pick" do
+      schema =
+        Datacaster.schema do
+          with([:person, :name, :first], any)
+        end
+
+        expect(schema.(person: {}).to_dry_result).to eq Failure(person: {name: ["is not Enumerable"]})
+    end
+  end
+
   describe "attribute mapping" do
     context "when non array keys are used" do
       subject { Datacaster.schema { attribute(:test) } }
@@ -1047,7 +1105,7 @@ RSpec.describe Datacaster do
     end
 
     context "when array keys are used" do
-      subject { Datacaster.schema { attribute([:offer, :amount]) } }
+      subject { Datacaster.schema { pick([:offer, :amount]) } }
 
       let (:mock_object) do
         Class.new do
@@ -1062,7 +1120,7 @@ RSpec.describe Datacaster do
       end
 
       it "returns values from nested hash" do
-        expect(subject.(mock_object.new).to_dry_result).to eq Success(5)
+        expect(subject.(offer: {amount: 5}).to_dry_result).to eq Success(5)
       end
     end
   end
@@ -1478,6 +1536,18 @@ RSpec.describe Datacaster do
 
       expect(schema.("super_test").to_dry_result).to eq Success("super_test")
       expect(schema.("no_super_test").to_dry_result).to eq Failure(["does not equal \"super_test\""])
+    end
+  end
+
+  describe "cleaning nested schemas" do
+    it "doesn't complain on keys checked in nested contex node" do
+      schema = Datacaster.schema do
+        Datacaster.schema do
+          hash_schema(a: integer, b: integer)
+        end & hash_schema(b: integer)
+      end
+
+      expect(schema.(a: 1, b: 2).to_dry_result).to eq Success(a: 1, b: 2)
     end
   end
 end

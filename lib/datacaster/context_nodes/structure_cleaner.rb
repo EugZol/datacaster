@@ -5,7 +5,7 @@ module Datacaster
         super(base)
 
         unless %i[fail remove pass].include?(strategy)
-          raise ArgumentError.new("Strategy should be :fail (return error on extra keys), :remove (remove extra keys) or :pass (ignore presence of extra keys)")
+          raise ArgumentError.new("Strategy should be :fail (return error on extra keys), :remove (remove extra keys) or :pass (ignore presence of extra keys), instead got #{strategy.inspect}")
         end
 
         @strategy = strategy
@@ -23,7 +23,11 @@ module Datacaster
 
       def transform_result(result)
         return result unless result.valid?
-        cast_success(result)
+        result = cast_success(result)
+        if @runtime.instance_variable_get(:@parent).respond_to?(:checked_schema=)
+          @runtime.instance_variable_get(:@parent).checked_schema = @runtime.checked_schema
+        end
+        result
       end
 
       def cast_success(result)

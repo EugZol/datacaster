@@ -16,6 +16,10 @@ module Datacaster
       Comparator.new(value, error_key)
     end
 
+    def run(&block)
+      Runner.new(&block)
+    end
+
     def transform(&block)
       Transformer.new(&block)
     end
@@ -45,6 +49,14 @@ module Datacaster
       )
     end
 
+    def strict_hash_schema(fields, error_key = nil)
+      schema(hash_schema(fields, error_key))
+    end
+
+    def choosy_hash_schema(fields, error_key = nil)
+      choosy_schema(hash_schema(fields, error_key))
+    end
+
     def transform_to_hash(fields)
       HashMapper.new(fields.transform_values { |x| DefinitionDSL.expand(x) })
     end
@@ -63,6 +75,12 @@ module Datacaster
 
     def partial_schema(base)
       ContextNodes::StructureCleaner.new(base, :pass)
+    end
+
+    # 'Around' types
+
+    def cast_around(&block)
+      AroundNodes::Caster.new(&block)
     end
 
     # 'Meta' types
@@ -151,8 +169,12 @@ module Datacaster
     end
 
     def pick(*keys)
-      if keys.empty? || keys.any? { |k| !Datacaster::Utils.pickable?(k) }
-        raise RuntimeError, "each argument should be String, Symbol, Integer or an array thereof", caller
+      if keys.empty?
+        raise RuntimeError, "pick(key, ...) accepts at least one argument", caller
+      end
+
+      if wrong = keys.find { |k| !Datacaster::Utils.pickable?(k) }
+        raise RuntimeError, "each argument should be String, Symbol, Integer or an array thereof, instead got #{wrong.inspect}", caller
       end
 
       retrieve_key = -> (from, key) do
@@ -242,6 +264,10 @@ module Datacaster
       check { |x| x.respond_to?(method) }.i18n_key(*error_keys, reference: method.to_s)
     end
 
+    def steps(*casters)
+      AndNode.new(*casters)
+    end
+
     def switch(base = nil, **on_clauses)
       switch = SwitchNode.new(base)
       on_clauses.reduce(switch) do |result, (k, v)|
@@ -251,6 +277,20 @@ module Datacaster
 
     def transform_to_value(value)
       transform { value }
+    end
+
+    def with(keys, caster)
+      keys = Array(keys)
+
+      unless Datacaster::Utils.pickable?(keys)
+        raise RuntimeError, "provide String, Symbol, Integer or an array thereof instead of #{keys.inspect}", caller
+      end
+
+      if keys.length == 1
+        return transform_to_hash(keys[0] => pick(keys[0]) & caster)
+      end
+
+      with(keys[0], must_be(Enumerable) & with(keys[1..-1], caster))
     end
 
     # Strict types

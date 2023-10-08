@@ -1,13 +1,16 @@
 module Datacaster
   module Runtimes
     class StructureCleaner < Base
-      attr_reader :checked_schema
+      attr_accessor :checked_schema
 
       def initialize(*)
         super
+        @ignore = false
         @checked_schema = {}
         @should_check_stack = [false]
         @pointer_stack = [@checked_schema]
+
+        @reserved_instance_variables += instance_variables
       end
 
       # Array checked schema are the same as hash one, where

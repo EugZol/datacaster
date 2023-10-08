@@ -1,8 +1,15 @@
+require 'set'
+
 module Datacaster
   module Runtimes
     class Base
+      attr_reader :reserved_instance_variables
+
       def self.call(r, proc, *args)
-        r.instance_exec(*args, &proc)
+        r.before_call!(r)
+        result = r.instance_exec(*args, &proc)
+        r.after_call!(r)
+        result
       end
 
       def self.send_to_parent(r, m, *args, &block)
@@ -17,6 +24,10 @@ module Datacaster
 
       def initialize(parent = nil)
         @parent = parent
+
+        # We won't be setting any instance variables outside this
+        # constructor, so we can proxy all the rest to the @object
+        @reserved_instance_variables = Set.new(instance_variables + [:@reserved_instance_variables])
       end
 
       def method_missing(m, *args, &block)
@@ -25,6 +36,14 @@ module Datacaster
 
       def respond_to_missing?(m, include_private = false)
         !@parent.nil? && @parent.respond_to?(m, include_private)
+      end
+
+      def after_call!(sender)
+        @parent.after_call!(sender) if @parent
+      end
+
+      def before_call!(sender)
+        @parent.before_call!(sender) if @parent
       end
 
       def inspect
