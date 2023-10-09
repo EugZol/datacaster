@@ -4,7 +4,8 @@ module Datacaster
       @base = base
 
       if Datacaster::Utils.pickable?(@base)
-        @base = Datacaster::Predefined.pick(@base)
+        @base = Datacaster::Predefined.run { checked_key!(base) } &
+          Datacaster::Predefined.pick(base)
       end
 
       if !@base.nil? && !Datacaster.instance?(@base)

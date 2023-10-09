@@ -330,7 +330,7 @@ module Datacaster
       hash_value(error_key) & transform { |x| x.symbolize_keys }
     end
 
-    def included_in(*values, error_key: nil)
+    def included_in(values, error_key: nil)
       error_keys = ['.included_in', 'datacaster.errors.included_in']
       error_keys.unshift(error_key) if error_key
       check { |x| values.include?(x) }.i18n_key(*error_keys, reference: values.map(&:to_s).join(', '))

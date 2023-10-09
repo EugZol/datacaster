@@ -58,7 +58,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`try(error_key = nil, catched_exception:) { |value| ... }`](#tryerror_key--nil-catched_exception--value--)
     - [`validate(active_model_validations, name = 'Anonymous')`](#validateactive_model_validations-name--anonymous)
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
-    - [`included_in(*reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
+    - [`included_in(reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
     - [`relate(left, op, right, error_key: nil)`](#relateleft-op-right-error_key-nil)
     - [`run { |value| ... }`](#run--value--)
     - [`transform { |value| ... }`](#transform--value--)
@@ -988,7 +988,7 @@ agreed_with_tos =
 
 I18n keys: `error_key`, `'.compare'`, `'datacaster.errors.compare'`. Adds `reference` i18n variable, setting it to `reference_value.to_s`.
 
-#### `included_in(*reference_values, error_key: nil)`
+#### `included_in(reference_values, error_key: nil)`
 
 Returns ValidResult if and only if `reference_values.include?` the value.
 
