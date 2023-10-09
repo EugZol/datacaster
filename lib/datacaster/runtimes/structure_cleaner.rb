@@ -35,6 +35,10 @@ module Datacaster
         @should_check_stack[-1] = true
       end
 
+      def checked_schema!(schema)
+        @pointer_stack[-1].merge!(schema)
+      end
+
       def ignore_checks!(&block)
         @ignore = true
         result = yield

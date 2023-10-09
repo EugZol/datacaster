@@ -1542,12 +1542,24 @@ RSpec.describe Datacaster do
   describe "cleaning nested schemas" do
     it "doesn't complain on keys checked in nested contex node" do
       schema = Datacaster.schema do
-        Datacaster.schema do
+        schema(
           hash_schema(a: integer, b: integer)
-        end & hash_schema(b: integer)
+        ) & hash_schema(b: integer)
       end
 
       expect(schema.(a: 1, b: 2).to_dry_result).to eq Success(a: 1, b: 2)
+    end
+
+    it "doesn't complain on nested keys in nested context node" do
+      caster = Datacaster.schema do
+        nested = schema(
+          hash_schema(a: integer, b: integer)
+        )
+
+        hash_schema(nested: nested)
+      end
+
+      expect(caster.(nested: {a: 1, b: 2}).to_dry_result).to eq Success(nested: {a: 1, b: 2})
     end
   end
 end
