@@ -126,5 +126,15 @@ RSpec.describe Datacaster do
 
       expect(caster.(3).to_dry_result).to eq Failure(["is invalid"])
     end
+
+    it 'marks matched-on value as checked' do
+      caster =
+        Datacaster.schema do
+          switch(:kind).
+            on(1, hash_schema(name: string))
+        end
+
+      expect(caster.(kind: 1, name: '1').to_dry_result).to eq Success(kind: 1, name: '1')
+    end
   end
 end

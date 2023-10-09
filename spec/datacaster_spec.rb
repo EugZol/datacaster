@@ -87,7 +87,7 @@ RSpec.describe Datacaster do
   end
 
   describe "included_in typecasting" do
-    subject { described_class.schema { included_in(1, '2', ['test']) } }
+    subject { described_class.schema { included_in([1, '2', ['test']]) } }
 
     it "passes one of the exact values and fails on everything else" do
       expect(subject.(1).to_dry_result).to eq Success(1)
