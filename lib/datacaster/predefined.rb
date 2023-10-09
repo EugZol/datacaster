@@ -193,7 +193,7 @@ module Datacaster
         result =
           keys.map do |key|
             Array(key).reduce(input) do |result, k|
-              result = instance_eval { retrieve_key.(result, k) }
+              result = retrieve_key.(result, k)
               break result if result == Datacaster.absent
               result
             end
