@@ -1561,5 +1561,15 @@ RSpec.describe Datacaster do
 
       expect(caster.(nested: {a: 1, b: 2}).to_dry_result).to eq Success(nested: {a: 1, b: 2})
     end
+
+    it "doesn't complain on keys in deeply nested strict schemas" do
+      schema = Datacaster.schema do
+        hash_schema(
+          test: schema(hash_schema(a: integer, b: integer))
+        )
+      end
+
+      expect(schema.(test: {a: 1, b: 2}).to_dry_result).to eq Success(test: {a: 1, b: 2})
+    end
   end
 end
