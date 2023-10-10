@@ -14,6 +14,12 @@ module Datacaster
       )
     end
 
+    def to_json_schema
+      @casters.reduce(JsonSchemaResult.new) do |result, caster|
+        result.apply(caster.to_json_schema)
+      end
+    end
+
     def inspect
       "#<Datacaster::AndNode casters: #{@casters.inspect}>"
     end

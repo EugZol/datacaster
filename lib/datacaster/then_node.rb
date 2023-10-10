@@ -26,6 +26,21 @@ module Datacaster
       end
     end
 
+    def to_json_schema
+      unless @else
+        raise ArgumentError.new('Datacaster: use "a & b" instead of "a.then(b)" when there is no else-clause')
+      end
+
+      left = @left.to_json_schema
+
+      JsonSchemaResult.new(
+        "oneOf" => [
+          (@left & @then).to_json_schema,
+          JsonSchemaResult.new("not" => left).apply(@else.to_json_schema)
+        ]
+      )
+    end
+
     def inspect
       "#<Datacaster::ThenNode Then: #{@then.inspect} Else: #{@else.inspect}>"
     end

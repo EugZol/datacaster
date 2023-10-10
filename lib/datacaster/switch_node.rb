@@ -25,8 +25,10 @@ module Datacaster
           if strict
             Datacaster::Predefined.compare(caster_or_value)
           else
-            Datacaster::Predefined.compare(caster_or_value.to_s) |
-              Datacaster::Predefined.compare(caster_or_value.to_sym)
+            (
+              Datacaster::Predefined.compare(caster_or_value.to_s) |
+                Datacaster::Predefined.compare(caster_or_value.to_sym)
+            ).json_schema { {"enum" => [caster_or_value.to_s]} }
           end
         else
           Datacaster::Predefined.compare(caster_or_value)
@@ -67,6 +69,20 @@ module Datacaster
 
       Datacaster.ErrorResult(
         I18nValues::Key.new(['.switch', 'datacaster.errors.switch'], value: object)
+      )
+    end
+
+    def to_json_schema
+      if @ons.empty?
+        raise RuntimeError, "switch caster requires at least one 'on' statement: switch(...).on(condition, cast)", caller
+      end
+
+      base = @base.to_json_schema
+
+      JsonSchemaResult.new(
+        "oneOf" => @ons.map { |on|
+          base.apply(on[0].to_json_schema).without_focus.apply(on[1].to_json_schema)
+        }
       )
     end
 

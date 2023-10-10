@@ -16,6 +16,7 @@ en:
       integer32: is not a 32-bit integer
       iso8601: is not a string with ISO-8601 date and time
       must_be: "is not %{reference}"
+      pattern: has invalid format
       relate: "%{left} should be %{op} %{right}"
       responds_to: "does not respond to %{reference}"
       string: is not a string
