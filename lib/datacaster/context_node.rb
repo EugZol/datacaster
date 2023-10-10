@@ -10,6 +10,10 @@ module Datacaster
       transform_result(result)
     end
 
+    def to_json_schema
+      @base.to_json_schema
+    end
+
     def inspect
       "#<#{self.class.name} base: #{@base.inspect}>"
     end

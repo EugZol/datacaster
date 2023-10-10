@@ -13,7 +13,7 @@ module Datacaster
     end
 
     def compare(value, error_key = nil)
-      Comparator.new(value, error_key)
+      Comparator.new(value, error_key).json_schema(enum: [value])
     end
 
     def run(&block)
@@ -189,6 +189,19 @@ module Datacaster
         end
       end
 
+      json_schema = ->(previous) do
+        previous = previous.apply({
+          'type' => 'object',
+          'properties' => keys.map { |k, v| [k.to_s, JsonSchemaResult.new] }.to_h
+        })
+
+        if keys.length == 1
+          previous.with_focus_key(keys[0].to_s)
+        else
+          previous.with_focus_key(false)
+        end
+      end
+
       must_be(Enumerable) & transform { |input|
         result =
           keys.map do |key|
@@ -199,7 +212,7 @@ module Datacaster
             end
           end
         keys.length == 1 ? result.first : result
-      }
+      }.json_schema(&json_schema)
     end
 
     def relate(left, op, right, error_key: nil)
@@ -310,13 +323,22 @@ module Datacaster
     def array(error_key = nil)
       error_keys = ['.array', 'datacaster.errors.array']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Array) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Array) }.i18n_key(*error_keys).
+        json_schema(type: 'array')
     end
 
     def float(error_key = nil)
       error_keys = ['.float', 'datacaster.errors.float']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Float) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Float) }.i18n_key(*error_keys).
+        json_schema(type: 'number', format: 'float')
+    end
+
+    def pattern(regexp, error_key = nil)
+      error_keys = ['.pattern', 'datacaster.errors.pattern']
+      error_keys.unshift(error_key) if error_key
+      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect).
+        json_schema(pattern: regexp.inspect)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
@@ -333,25 +355,30 @@ module Datacaster
     def included_in(values, error_key: nil)
       error_keys = ['.included_in', 'datacaster.errors.included_in']
       error_keys.unshift(error_key) if error_key
-      check { |x| values.include?(x) }.i18n_key(*error_keys, reference: values.map(&:to_s).join(', '))
+      check { |x| values.include?(x) }.
+        i18n_key(*error_keys, reference: values.map(&:to_s).join(', ')).
+        json_schema(enum: values)
     end
 
     def integer(error_key = nil)
       error_keys = ['.integer', 'datacaster.errors.integer']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Integer) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(Integer) }.i18n_key(*error_keys).
+        json_schema(type: 'integer')
     end
 
     def integer32(error_key = nil)
       error_keys = ['.integer32', 'datacaster.errors.integer32']
       error_keys.unshift(error_key) if error_key
-      integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
+      integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys).
+        json_schema(format: 'int32')
     end
 
     def string(error_key = nil)
       error_keys = ['.string', 'datacaster.errors.string']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(String) }.i18n_key(*error_keys)
+      check { |x| x.is_a?(String) }.i18n_key(*error_keys).
+        json_schema(type: 'string')
     end
 
     def non_empty_string(error_key = nil)
@@ -368,7 +395,8 @@ module Datacaster
 
       string(error_key) &
         try(catched_exception: [ArgumentError, TypeError]) { |x| DateTime.iso8601(x) }.
-          i18n_key(*error_keys)
+          i18n_key(*error_keys).
+          json_schema(type: 'string', format: 'date-time')
     end
 
     def to_boolean(error_key = nil)
@@ -392,7 +420,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         Float(x)
-      end.i18n_key(*error_keys)
+      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float')
     end
 
     def to_integer(error_key = nil)

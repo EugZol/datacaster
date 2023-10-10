@@ -30,6 +30,13 @@ module Datacaster
       end
     end
 
+    def to_json_schema
+      JsonSchemaResult.new({
+        'type' => 'array',
+        'items' => @element_caster.to_json_schema
+      })
+    end
+
     def inspect
       "#<Datacaster::ArraySchema [#{@element_caster.inspect}]>"
     end

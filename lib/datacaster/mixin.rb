@@ -81,5 +81,13 @@ module Datacaster
     def inspect
       "#<Datacaster::Base>"
     end
+
+    def json_schema(schema_attributes = {}, &block)
+      JsonSchemaNode.new(self, schema_attributes, &block)
+    end
+
+    def to_json_schema
+      JsonSchemaResult.new
+    end
   end
 end

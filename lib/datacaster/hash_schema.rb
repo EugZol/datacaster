@@ -42,6 +42,14 @@ module Datacaster
       end
     end
 
+    def to_json_schema
+      JsonSchemaResult.new({
+        "type" => "object",
+        "properties" => @fields.map { |k, v| [k.to_s, v.to_json_schema] }.to_h,
+        "required" => @fields.keys.map(&:to_s)
+      })
+    end
+
     def inspect
       field_descriptions =
         @fields.map do |k, v|

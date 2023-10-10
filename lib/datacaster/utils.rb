@@ -1,3 +1,5 @@
+require 'set'
+
 module Datacaster
   module Utils
     extend self

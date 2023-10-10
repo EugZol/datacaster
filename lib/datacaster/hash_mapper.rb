@@ -71,6 +71,12 @@ module Datacaster
       end
     end
 
+    def to_json_schema
+      @fields.values.reduce(JsonSchemaResult.new) do |result, caster|
+        result.apply(caster.to_json_schema)
+      end
+    end
+
     def inspect
       field_descriptions =
         @fields.map do |k, v|
