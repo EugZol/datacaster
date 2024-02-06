@@ -136,5 +136,15 @@ RSpec.describe Datacaster do
 
       expect(caster.(kind: 1, name: '1').to_dry_result).to eq Success(kind: 1, name: '1')
     end
+
+    it 'marks matched-on value as checked with nested schemas' do
+      caster =
+        Datacaster.schema do
+          s = Datacaster.schema { string }
+          switch(:kind).on('person', hash_schema(kind: s))
+        end
+
+      expect(caster.(kind: 'person').to_dry_result).to eq Success(kind: 'person')
+    end
   end
 end

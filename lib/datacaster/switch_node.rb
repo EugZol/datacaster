@@ -1,11 +1,15 @@
 module Datacaster
   class SwitchNode < Base
-    def initialize(base = nil, on_casters = [], else_caster = nil)
+    def initialize(base = nil, on_casters: [], else_caster: nil, pick_key: nil)
       @base = base
+      @pick_key = pick_key
 
       if Datacaster::Utils.pickable?(@base)
-        @base = Datacaster::Predefined.run { checked_key!(base) } &
-          Datacaster::Predefined.pick(base)
+        unless @pick_key.nil?
+          raise RuntimeError, "pick_key expected to be nil because #{@base.inspect} is pickable"
+        end
+        @pick_key = base
+        @base = Datacaster::Predefined.pick(base)
       end
 
       if !@base.nil? && !Datacaster.instance?(@base)
@@ -34,12 +38,12 @@ module Datacaster
 
       clause = DefinitionDSL.expand(clause)
 
-      self.class.new(@base, @ons + [[caster, clause]], @else)
+      self.class.new(@base, on_casters: @ons + [[caster, clause]], else_caster: @else, pick_key: @pick_key)
     end
 
     def else(else_caster)
       raise ArgumentError, "Datacaster: double else clause is not permitted", caller if @else
-      self.class.new(@base, @ons, else_caster)
+      self.class.new(@base, on_casters: @ons, else_caster: else_caster, pick_key: @pick_key)
     end
 
     def cast(object, runtime:)
@@ -59,7 +63,11 @@ module Datacaster
         result = check.with_runtime(runtime).(switch_result)
         next unless result.valid?
 
-        return clause.with_runtime(runtime).(object)
+        if @pick_key.nil?
+          return clause.with_runtime(runtime).(object)
+        else
+          return runtime.checked_key!(@pick_key) { clause.with_runtime(runtime).(object) }
+        end
       end
 
       # all 'on'-s have failed
@@ -71,7 +79,7 @@ module Datacaster
     end
 
     def inspect
-      "#<Datacaster::SwitchNode base: #{@base.inspect} on: #{@ons.inspect} else: #{@else.inspect}>"
+      "#<Datacaster::SwitchNode base: #{@base.inspect} on: #{@ons.inspect} else: #{@else.inspect} pick_key: #{@pick_key.inspect}>"
     end
   end
 end
