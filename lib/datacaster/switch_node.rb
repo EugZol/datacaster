@@ -63,11 +63,8 @@ module Datacaster
         result = check.with_runtime(runtime).(switch_result)
         next unless result.valid?
 
-        if @pick_key.nil?
-          return clause.with_runtime(runtime).(object)
-        else
-          return runtime.checked_key!(@pick_key) { clause.with_runtime(runtime).(object) }
-        end
+        runtime.checked_key!(@pick_key) if !@pick_key.nil? && !@pick_key.is_a?(Array)
+        return clause.with_runtime(runtime).(object)
       end
 
       # all 'on'-s have failed

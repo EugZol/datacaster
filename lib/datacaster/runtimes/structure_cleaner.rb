@@ -35,8 +35,20 @@ module Datacaster
         @should_check_stack[-1] = true
       end
 
+      # Notify current runtime that some child runtime has built schema,
+      # child runtime's schema is passed as the argument
       def checked_schema!(schema)
-        @pointer_stack[-1].merge!(schema)
+        # Current runtime has marked its schema as checked unconditionally
+        return if @pointer_stack[-1] == true
+
+        # Child runtime marks its schema as checked unconditionally, so
+        # current runtime should do as well
+        if schema == true
+          @pointer_stack[-1] = true
+        # Child runtime's schema should be merged with current runtime's schema
+        else
+          @pointer_stack[-1].merge!(schema)
+        end
       end
 
       def ignore_checks!(&block)

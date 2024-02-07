@@ -47,7 +47,8 @@ module Datacaster
         when Hash
           cast_hash(result, schema)
         else
-          raise "Expected hash or array when checking #{value.inspect}"
+          raise RuntimeError, "Expected hash or array inside result when checking #{result.inspect} " \
+            "(schema is #{schema.inspect})", caller
         end
       end
 
