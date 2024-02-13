@@ -1487,7 +1487,33 @@ current_user = ...
 schema.with_context(current_user: current_user).(post_id: 15)
 ```
 
-`context` is an [OpenStruct](https://ruby-doc.org/stdlib-3.1.0/libdoc/ostruct/rdoc/OpenStruct.html) instance.
+`context` behaves similarly to OpenStruct, setter method can be used to set a context value (see also [run](#run--value--) caster):
+
+```ruby
+schema =
+  Datacaster.schema do
+    run { context.five = 5 } & check { context.five == 5 }
+  end
+
+# Notice that #with_context call is still required, otherwise
+# #context method will not be available in the caster's runtime
+schema.with_context.(nil)
+# => Datacaster::ValidResult(nil)
+```
+
+If there are conflicts between context values, the most specific one (closest to the caster) wins:
+
+```ruby
+schema =
+  Datacaster.schema do
+    check { context.five == 5 }.
+      with_context(five: 5). # this will win
+      with_context(five: 10)
+  end
+
+schema.with_context(five: 15).(nil)
+# => Datacaster::ValidResult(nil)
+```
 
 **Note**
 

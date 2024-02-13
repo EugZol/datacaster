@@ -20,9 +20,9 @@ module Datacaster
       ThenNode.new(self, DefinitionDSL.expand(other))
     end
 
-    def with_context(context)
-      unless context.is_a?(Hash)
-        raise "with_context expected Hash as argument, got #{context.inspect} instead"
+    def with_context(context = {})
+      unless context.respond_to?(:[])
+        raise "with_context expected enumerable as argument, got #{context.inspect} instead"
       end
       ContextNodes::UserContext.new(self, context)
     end

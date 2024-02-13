@@ -10,16 +10,23 @@ module Datacaster
         end
 
         def method_missing(m, *args)
-          if !args.empty? || block_given?
+          if args.length > 1 || block_given?
             return super
           end
 
-          if @context.key?(m)
+          key_present = @context.respond_to?(:key?) && @context.key?(m) ||
+            @context.to_h.key?(m.to_sym)
+
+          if key_present && args.empty?
             return @context[m]
           end
 
+          if m =~ /\A.+=\z/ && args.length == 1
+            return @context[m[0..-2].to_sym] = args[0]
+          end
+
           begin
-            @node.class.send_to_parent(@node, :context).public_send(m)
+            @node.class.send_to_parent(@node, :context).public_send(m, *args)
           rescue NoMethodError
             raise NoMethodError.new("Key #{m.inspect} is not found in the context")
           end

@@ -17,6 +17,16 @@ RSpec.describe Datacaster do
       expect(type.with_context(test: "asd").("asd").to_dry_result).to eq Success("asd")
     end
 
+    it "allows to overwrite with context.something= in runtime" do
+      type =
+        described_class.schema do
+          run { context.five = 5 } &
+            check { context.five == 5 }
+        end
+
+      expect(type.with_context.(nil).to_dry_result).to eq Success(nil)
+    end
+
     it "allows to access context.something in deeply nested" do
       schema = described_class.schema do
         hash_schema(
@@ -52,7 +62,7 @@ RSpec.describe Datacaster do
           with_context(a: 3)
       end
 
-      expect(schema.with_context(av: 6).(1).to_dry_result).to eq Success(1)
+      expect(schema.with_context(av: 6, a: 4, v: 100).(1).to_dry_result).to eq Success(1)
     end
 
     it "works with deep nesting" do
