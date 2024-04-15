@@ -31,8 +31,8 @@ RSpec.describe Datacaster do
           common_validator * person_validator
         end
 
-      # record = {name: 'John', description: 'a person'}
-      # expect(record_validator.(record).to_dry_result).to eq Success(record)
+      record = {name: 'John', description: 'a person'}
+      expect(record_validator.(record).to_dry_result).to eq Success(record)
 
       record = {name: 'John', description: 'a person', extra: '123'}
       expect(record_validator.(record).to_dry_result).to eq Failure(extra: ['must be absent'])
