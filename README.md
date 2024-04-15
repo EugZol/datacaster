@@ -1327,7 +1327,7 @@ CommonValidator =
   end
 
 PersonValidator =
-  Datacaster.schema do
+  Datacaster.partial_schema do
     hash_schema(
       name: string
     )

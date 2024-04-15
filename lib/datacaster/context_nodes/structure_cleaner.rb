@@ -24,10 +24,15 @@ module Datacaster
       def transform_result(result)
         return result unless result.valid?
         result = cast_success(result)
-        parent_runtime = @runtime.instance_variable_get(:@parent)
-        if parent_runtime.respond_to?(:checked_schema!)
-          parent_runtime.checked_schema!(@runtime.checked_schema)
+
+        # Notify parent runtime of current runtime's schema
+        unless @runtime.unchecked?
+          parent_runtime = @runtime.instance_variable_get(:@parent)
+          if parent_runtime.respond_to?(:checked_schema!)
+            parent_runtime.checked_schema!(@runtime.checked_schema)
+          end
         end
+
         result
       end
 
