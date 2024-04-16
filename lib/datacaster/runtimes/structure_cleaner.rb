@@ -47,6 +47,7 @@ module Datacaster
           @pointer_stack[-1] = true
         # Child runtime's schema should be merged with current runtime's schema
         else
+          will_check!
           @pointer_stack[-1].merge!(schema)
         end
       end
