@@ -31,6 +31,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`hash_with_symbolized_keys(error_key = nil)`](#hash_with_symbolized_keyserror_key--nil)
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
+    - [`uuid(error_key = nil)`](#uuiderror_key--nil)
   - [Special types](#special-types)
     - [`absent(error_key = nil, on: nil)`](#absenterror_key--nil-on-nil)
     - [`any(error_key = nil)`](#anyerror_key--nil)
@@ -527,6 +528,13 @@ Returns ValidResult if and only if provided value is a string and is not empty. 
 
 * not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
 * is empty – `error_key`, `'.non_empty_string'`, `'datacaster.errors.non_empty_string'`
+
+#### `uuid(error_key = nil)`
+
+Returns ValidResult if and only if provided value is a string and UUID. Doesn't transform the value.
+
+* not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
+* not UUID – `error_key`, `'.uuid'`, `'datacaster.errors.uuid'`
 
 ### Special types
 

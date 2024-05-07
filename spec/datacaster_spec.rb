@@ -136,6 +136,26 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "UUID string typecasting" do
+    subject { described_class.schema { uuid } }
+
+    it "passes strings" do
+      uuid = "58724b11-ff06-485e-bf67-410c96f606d7"
+
+      expect(subject.(uuid).to_dry_result).to eq Success(uuid)
+    end
+
+    it "returns Failure on integers" do
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns Failure on non-UUID strings" do
+      uuid_without_last_symbol = "58724b11-ff06-485e-bf67-410c96f606d"
+
+      expect(subject.(uuid_without_last_symbol).to_dry_result).to eq Failure(["is not UUID"])
+    end
+  end
+
   describe "decimal typecasting" do
     subject { described_class.schema { decimal } }
 

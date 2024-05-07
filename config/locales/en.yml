@@ -25,3 +25,4 @@ en:
       non_empty_string: should be non-empty string
       switch: is invalid
       try: raised an error
+      uuid: is not UUID

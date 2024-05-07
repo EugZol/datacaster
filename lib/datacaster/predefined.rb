@@ -360,6 +360,12 @@ module Datacaster
       string(error_key) & check { |x| !x.empty? }.i18n_key(*error_keys)
     end
 
+    def uuid(error_key = nil)
+      error_keys = ['.uuid', 'datacaster.errors.uuid']
+      error_keys.unshift(error_key) if error_key
+      string(error_key) & check { |x| x.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/) }.i18n_key(*error_keys)
+    end
+
     # Form request types
 
     def iso8601(error_key = nil)
