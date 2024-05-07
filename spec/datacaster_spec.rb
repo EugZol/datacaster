@@ -188,6 +188,19 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "pattern typecasting" do
+    subject { described_class.schema { pattern(/\A\d+\z/) } }
+
+    it "passes correctly formatted strings" do
+      expect(subject.("123").to_dry_result).to eq Success("123")
+      expect(subject.("ab123").to_dry_result).to eq Failure(["has invalid format"])
+    end
+
+    it "doesn't pass non-strings" do
+      expect(subject.(:'123').to_dry_result).to eq Failure(["is not a string"])
+    end
+  end
+
   describe "optional string typecasting" do
     subject { described_class.schema { optional(string) } }
 

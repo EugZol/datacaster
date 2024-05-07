@@ -31,6 +31,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`hash_with_symbolized_keys(error_key = nil)`](#hash_with_symbolized_keyserror_key--nil)
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
+    - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
     - [`uuid(error_key = nil)`](#uuiderror_key--nil)
   - [Special types](#special-types)
     - [`absent(error_key = nil, on: nil)`](#absenterror_key--nil-on-nil)
@@ -526,8 +527,19 @@ I18n keys:
 
 Returns ValidResult if and only if provided value is a string and is not empty. Doesn't transform the value.
 
+I18n keys:
+
 * not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
 * is empty – `error_key`, `'.non_empty_string'`, `'datacaster.errors.non_empty_string'`
+
+#### `pattern(regexp, error_key = nil)`
+
+Returns ValidResult if and only if provided value is a string and satisfies regexp. Doesn't transform the value. Don't forget to provide start/end markers in the regexp if needed, e.g. `/\A\d+\z/` for digits-only string.
+
+I18n keys:
+
+* not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
+* doesn't satisfy the regexp – `error_key`, `'.pattern'`, `'datacaster.errors.pattern'`
 
 #### `uuid(error_key = nil)`
 
