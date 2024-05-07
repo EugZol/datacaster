@@ -136,6 +136,26 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "UUID string typecasting" do
+    subject { described_class.schema { uuid } }
+
+    it "passes UUID strings" do
+      uuid = "58724b11-ff06-485e-bf67-410c96f606d7"
+
+      expect(subject.(uuid).to_dry_result).to eq Success(uuid)
+    end
+
+    it "returns Failure on integers" do
+      expect(subject.(1).to_dry_result).to eq Failure(["is not a string"])
+    end
+
+    it "returns Failure on non-UUID strings" do
+      uuid_without_last_symbol = "58724b11-ff06-485e-bf67-410c96f606d"
+
+      expect(subject.(uuid_without_last_symbol).to_dry_result).to eq Failure(["is not UUID"])
+    end
+  end
+
   describe "decimal typecasting" do
     subject { described_class.schema { decimal } }
 
@@ -165,6 +185,19 @@ RSpec.describe Datacaster do
 
     it "returns Failure on too big integers" do
       expect(subject.(2_147_483_648).to_dry_result).to eq Failure(["is not a 32-bit integer"])
+    end
+  end
+
+  describe "pattern typecasting" do
+    subject { described_class.schema { pattern(/\A\d+\z/) } }
+
+    it "passes correctly formatted strings" do
+      expect(subject.("123").to_dry_result).to eq Success("123")
+      expect(subject.("ab123").to_dry_result).to eq Failure(["has invalid format"])
+    end
+
+    it "doesn't pass non-strings" do
+      expect(subject.(:'123').to_dry_result).to eq Failure(["is not a string"])
     end
   end
 

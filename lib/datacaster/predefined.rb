@@ -319,6 +319,12 @@ module Datacaster
       check { |x| x.is_a?(Float) }.i18n_key(*error_keys)
     end
 
+    def pattern(regexp, error_key = nil)
+      error_keys = ['.pattern', 'datacaster.errors.pattern']
+      error_keys.unshift(error_key) if error_key
+      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect)
+    end
+
     # 'hash' would be a bad method name, because it would override built in Object#hash
     def hash_value(error_key = nil)
       error_keys = ['.hash_value', 'datacaster.errors.hash_value']
@@ -358,6 +364,12 @@ module Datacaster
       error_keys = ['.non_empty_string', 'datacaster.errors.non_empty_string']
       error_keys.unshift(error_key) if error_key
       string(error_key) & check { |x| !x.empty? }.i18n_key(*error_keys)
+    end
+
+    def uuid(error_key = nil)
+      error_keys = ['.uuid', 'datacaster.errors.uuid']
+      error_keys.unshift(error_key) if error_key
+      string(error_key) & pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/).i18n_key(*error_keys)
     end
 
     # Form request types
