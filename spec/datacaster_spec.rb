@@ -139,7 +139,7 @@ RSpec.describe Datacaster do
   describe "UUID string typecasting" do
     subject { described_class.schema { uuid } }
 
-    it "passes strings" do
+    it "passes UUID strings" do
       uuid = "58724b11-ff06-485e-bf67-410c96f606d7"
 
       expect(subject.(uuid).to_dry_result).to eq Success(uuid)
