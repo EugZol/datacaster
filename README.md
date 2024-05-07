@@ -545,6 +545,8 @@ I18n keys:
 
 Returns ValidResult if and only if provided value is a string and UUID. Doesn't transform the value.
 
+I18n keys:
+
 * not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
 * not UUID – `error_key`, `'.uuid'`, `'datacaster.errors.uuid'`
 
