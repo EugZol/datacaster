@@ -276,7 +276,7 @@ module Datacaster
     end
 
     def transform_to_value(value)
-      transform { value }
+      transform { Datacaster::Utils.deep_freeze(value) }
     end
 
     def with(keys, caster)

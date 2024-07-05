@@ -847,7 +847,11 @@ I18n keys:
 
 #### `transform_to_value(value)`
 
-Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). See also [`default`](#defaultdefault_value-on-nil).
+Always returns ValidResult. The value is transformed to provided argument (disregarding the original value).
+
+Returned value is deeply freezed with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
+
+See also [`default`](#defaultdefault_value-on-nil).
 
 ### "Web-form" types
 

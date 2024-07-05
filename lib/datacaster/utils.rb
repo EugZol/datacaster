@@ -2,6 +2,10 @@ module Datacaster
   module Utils
     extend self
 
+    def deep_freeze(value, copy: true)
+      Ractor.make_shareable(value, copy:)
+    end
+
     def merge_errors(left, right)
       add_error_to_base = ->(hash, error) {
         hash[:base] ||= []
