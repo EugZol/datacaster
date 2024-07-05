@@ -1033,12 +1033,31 @@ RSpec.describe Datacaster do
   end
 
   describe "constant mapping" do
-    it "returns exact value" do
-      t = Datacaster.schema { transform_to_value("Test") }
+    let(:transform_to_value_caster) do
+      Datacaster.schema { transform_to_value({ a: { b: { c: "d" } } }) }
+    end
 
-      expect(t.(123).to_dry_result).to eq Success("Test")
+    let(:returned_value) do
+      transform_to_value_caster.(123).value!
+    end
+
+    it "returns exact value" do
+      expect(returned_value).to eq({ a: { b: { c: "d" } } })
+    end
+
+    it "freezes returned value" do
+      expect(returned_value).to be_frozen
+    end
+
+    it "freezes deeply" do
+      expect { returned_value[:a][:b][:c].upcase! }.to raise_error FrozenError
+    end
+
+    it "becomes shareable" do
+      expect(Ractor.shareable?(returned_value)).to be true
     end
   end
+
 
   describe "pass_if casting" do
     subject { Datacaster.schema { pass_if(check { |x| x[:test] == 0 }) } }

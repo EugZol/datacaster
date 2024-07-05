@@ -19,5 +19,9 @@ module Datacaster
     def present?
       false
     end
+
+    def ==(other)
+      other.is_a?(self.class)
+    end
   end
 end
