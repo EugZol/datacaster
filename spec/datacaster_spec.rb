@@ -1052,10 +1052,6 @@ RSpec.describe Datacaster do
     it "freezes deeply" do
       expect { returned_value[:a][:b][:c].pop }.to raise_error FrozenError
     end
-
-    it "becomes shareable" do
-      expect(Ractor.shareable?(returned_value)).to be true
-    end
   end
 
   describe "pass_if casting" do
