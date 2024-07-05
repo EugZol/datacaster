@@ -1058,7 +1058,6 @@ RSpec.describe Datacaster do
     end
   end
 
-
   describe "pass_if casting" do
     subject { Datacaster.schema { pass_if(check { |x| x[:test] == 0 }) } }
 
