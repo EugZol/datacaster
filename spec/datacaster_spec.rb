@@ -1034,7 +1034,7 @@ RSpec.describe Datacaster do
 
   describe "constant mapping" do
     let(:transform_to_value_caster) do
-      Datacaster.schema { transform_to_value({ a: { b: { c: "d" } } }) }
+      Datacaster.schema { transform_to_value({ a: { b: { c: ["d"] } } }) }
     end
 
     let(:returned_value) do
@@ -1042,7 +1042,7 @@ RSpec.describe Datacaster do
     end
 
     it "returns exact value" do
-      expect(returned_value).to eq({ a: { b: { c: "d" } } })
+      expect(returned_value).to eq({ a: { b: { c: ["d"] } } })
     end
 
     it "freezes returned value" do
@@ -1050,7 +1050,7 @@ RSpec.describe Datacaster do
     end
 
     it "freezes deeply" do
-      expect { returned_value[:a][:b][:c].upcase! }.to raise_error FrozenError
+      expect { returned_value[:a][:b][:c].pop }.to raise_error FrozenError
     end
 
     it "becomes shareable" do
