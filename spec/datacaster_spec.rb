@@ -84,6 +84,11 @@ RSpec.describe Datacaster do
       expect(schema.(1).to_dry_result).to eq Success(1)
       expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
     end
+
+    it "returns deeply frozen default value" do
+      schema = described_class.schema { default([{}], on: :nil?) }
+      expect { schema.(nil).value!.first[:a] = "b" }.to raise_error FrozenError
+    end
   end
 
   describe "included_in typecasting" do

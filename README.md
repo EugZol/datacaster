@@ -595,6 +595,8 @@ login.("test")
 
 Always returns ValidResult.
 
+Returned `default_value` is deeply frozen with [Ractor::make_shareable](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
+
 Returns `default_value` in the following cases:
 
 * if the value is `Datacaster.absent` (`on` is disregarded in such case)
@@ -849,7 +851,7 @@ I18n keys:
 
 Always returns ValidResult. The value is transformed to provided argument (disregarding the original value).
 
-Returned value is deeply freezed with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
+Returned value is deeply frozen with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
 
 See also [`default`](#defaultdefault_value-on-nil).
 

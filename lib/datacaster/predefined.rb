@@ -131,7 +131,7 @@ module Datacaster
       transform do |x|
         if x == Datacaster.absent ||
           (!on.nil? && x.respond_to?(on) && x.public_send(on))
-          value
+          Datacaster::Utils.deep_freeze(value)
         else
           x
         end
