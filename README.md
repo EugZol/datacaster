@@ -595,7 +595,7 @@ login.("test")
 
 Always returns ValidResult.
 
-Returns `default_value` in the following cases:
+Returns deeply frozen (see details: [`transform_to_value(value)`](#transform_to_valuevalue)) `default_value` in the following cases:
 
 * if the value is `Datacaster.absent` (`on` is disregarded in such case)
 * if `on` is set to a method name to which the value responds and yields truthy

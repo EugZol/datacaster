@@ -57,32 +57,32 @@ RSpec.describe Datacaster do
   end
 
   describe "default typecasting" do
-    subject { described_class.schema { default(5) } }
+    subject { described_class.schema { default([{}]) } }
 
     it "passes anything" do
       expect(subject.("test").to_dry_result).to eq Success("test")
     end
 
-    it "transforms to default on absent" do
-      expect(subject.(Datacaster.absent).to_dry_result).to eq Success(5)
+    it "transforms to deeply frozen default on absent" do
+      expect(subject.(Datacaster.absent).value!).to eq([{}]).and be_frozen.and all(be_frozen)
     end
 
     it "doesn't transform to default on nils" do
       expect(subject.(nil).to_dry_result).to eq Success(nil)
     end
 
-    it "transforms to default when :on points to method which returns truthfully" do
-      schema = described_class.schema { default(5, on: :nil?) }
-      expect(schema.(nil).to_dry_result).to eq Success(5)
+    it "transforms to deeply frozen default when :on points to method which returns truthfully" do
+      schema = described_class.schema { default([{}], on: :nil?) }
+      expect(schema.(nil).value!).to eq([{}]).and be_frozen.and all(be_frozen)
       expect(schema.(1).to_dry_result).to eq Success(1)
-      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
+      expect(schema.(Datacaster.absent).value!).to eq([{}]).and be_frozen.and all(be_frozen)
     end
 
     it "doesn't transform when value doesn't respond to method set in :on" do
-      schema = described_class.schema { default(5, on: :blabla) }
+      schema = described_class.schema { default([{}], on: :blabla) }
       expect(schema.(nil).to_dry_result).to eq Success(nil)
       expect(schema.(1).to_dry_result).to eq Success(1)
-      expect(schema.(Datacaster.absent).to_dry_result).to eq Success(5)
+      expect(schema.(Datacaster.absent).value!).to eq([{}]).and be_frozen.and all(be_frozen)
     end
   end
 
