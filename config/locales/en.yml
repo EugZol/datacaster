@@ -12,6 +12,7 @@ en:
       float: is not a float
       hash_value: is not a hash
       included_in: is not one of %{reference}
+      excluded_in: is one of %{reference}
       integer: is not an integer
       integer32: is not a 32-bit integer
       iso8601: is not a string with ISO-8601 date and time

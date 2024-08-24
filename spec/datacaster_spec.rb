@@ -105,6 +105,20 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "included_in typecasting" do
+    subject { described_class.schema { excluded_in([1, '2', ['test']]) } }
+
+    it "fails one of the exact values and passes on everything else" do
+      expect(subject.(2).to_dry_result).to eq Success(2)
+      expect(subject.('1').to_dry_result).to eq Success('1')
+      expect(subject.([:test]).to_dry_result).to eq Success([:test])
+
+      expect(subject.('2').to_dry_result).to eq Failure(['is one of 1, 2, ["test"]'])
+      expect(subject.(['test']).to_dry_result).to eq Failure(['is one of 1, 2, ["test"]'])
+      expect(subject.(1).to_dry_result).to eq Failure(['is one of 1, 2, ["test"]'])
+    end
+  end
+
   describe "string typecasting" do
     subject { described_class.schema { string } }
 
@@ -1622,6 +1636,20 @@ RSpec.describe Datacaster do
       end
 
       expect(schema.(test: {a: 1, b: 2}).to_dry_result).to eq Success(test: {a: 1, b: 2})
+    end
+  end
+
+  describe "fallback typecasting" do
+    subject { described_class.schema { fallback(5) } }
+
+    it 'success fallback to target' do
+      expect(subject.(:invalid_value).to_dry_result).to eq Success(5)
+      expect(subject.(nil).to_dry_result).to eq Success(5)
+      expect(subject.(Datacaster.absent).to_dry_result).to eq Success(5)
+    end
+
+    it 'successful anything' do
+      expect(subject.(100).to_dry_result).to eq Success(100)
     end
   end
 end

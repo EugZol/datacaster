@@ -138,6 +138,14 @@ module Datacaster
       end
     end
 
+    def fallback(value, &block)
+      cast do |x|
+        result = x.class != value.class ? value : x
+
+        Datacaster.ValidResult(result)
+      end
+    end
+
     def merge_message_keys(*keys)
       MessageKeysMerger.new(keys)
     end
@@ -340,6 +348,12 @@ module Datacaster
       error_keys = ['.included_in', 'datacaster.errors.included_in']
       error_keys.unshift(error_key) if error_key
       check { |x| values.include?(x) }.i18n_key(*error_keys, reference: values.map(&:to_s).join(', '))
+    end
+
+    def excluded_in(values, error_key: nil)
+      error_keys = ['.excluded_in', 'datacaster.errors.excluded_in']
+      error_keys.unshift(error_key) if error_key
+      check { |x| !values.include?(x) }.i18n_key(*error_keys, reference: values.map(&:to_s).join(', '))
     end
 
     def integer(error_key = nil)

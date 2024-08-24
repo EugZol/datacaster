@@ -38,6 +38,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`any(error_key = nil)`](#anyerror_key--nil)
     - [`attribute(*keys)`](#attributekeys)
     - [`default(default_value, on: nil)`](#defaultdefault_value-on-nil)
+    - [`fallback(fallback_value)`](#fallbackfallback_value)
     - [`merge_message_keys(*keys)`](#merge_message_keyskeys)
     - [`must_be(klass, error_key = nil)`](#must_beklass-error_key--nil)
     - [`optional(base, on: nil)`](#optionalbase-on-nil)
@@ -61,6 +62,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`validate(active_model_validations, name = 'Anonymous')`](#validateactive_model_validations-name--anonymous)
     - [`compare(reference_value, error_key = nil)`](#comparereference_value-error_key--nil)
     - [`included_in(reference_values, error_key: nil)`](#included_inreference_values-error_key-nil)
+    - [`excluded_in(reference_values, error_key: nil)`](#excluded_inreference_values-error_key-nil)
     - [`relate(left, op, right, error_key: nil)`](#relateleft-op-right-error_key-nil)
     - [`run { |value| ... }`](#run--value--)
     - [`transform { |value| ... }`](#transform--value--)
@@ -606,6 +608,17 @@ Returns the initial value otherwise.
 
 Set `on` to `:nil?`, `:empty?` or similar method names.
 
+#### `fallback(fallback_value)`
+
+Always returns ValidResult.
+
+Returns `fallback_value` in the following cases:
+
+* if the value is `Datacaster.absent` or `nil`
+* if the value not equals to another value by class
+
+Returns the initial value otherwise.
+
 #### `merge_message_keys(*keys)`
 
 Returns ValidResult only if the value `#is_a?(Hash)`.
@@ -1021,6 +1034,12 @@ I18n keys: `error_key`, `'.compare'`, `'datacaster.errors.compare'`. Adds `refer
 Returns ValidResult if and only if `reference_values.include?` the value.
 
 I18n keys: `error_key`, `'.included_in'`, `'datacaster.errors.included_in'`. Adds `reference` i18n variable, setting it to `reference_values.map(&:to_s).join(', ')`.
+
+#### `excluded_in(reference_values, error_key: nil)`
+
+Returns ValidResult if and only if not `reference_values.include?` the value.
+
+I18n keys: `error_key`, `'.excluded_in'`, `'datacaster.errors.excluded_in'`. Adds `reference` i18n variable, setting it to `reference_values.map(&:to_s).join(', ')`.
 
 #### `relate(left, op, right, error_key: nil)`
 
