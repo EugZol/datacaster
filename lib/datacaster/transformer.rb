@@ -8,8 +8,8 @@ module Datacaster
 
     def cast(object, runtime:)
       result = Runtimes::Base.(runtime, @transform, object)
-      if runtime.respond_to?(:checked_key!) && result.is_a?(Hash)
-        result.keys.each { |key| runtime.checked_key!(key) }
+      if runtime.respond_to?(:will_not_check!)
+        runtime.will_not_check!
       end
       Datacaster::ValidResult(result)
     end

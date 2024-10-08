@@ -9,6 +9,16 @@ RSpec.describe Datacaster do
     expect(caster.(a: 'value').to_dry_result).to eq Success(b: 'value')
   end
 
+  it 'transform can cast to classes' do
+    i = Class.new.new
+
+    caster =
+      Datacaster.schema do
+        hash_schema(a: string) & transform { i }
+      end
+    expect(caster.(a: 'value').to_dry_result).to eq Success(i)
+  end
+
   it 'defaults marks hashes as cleaned' do
     caster =
       Datacaster.schema do

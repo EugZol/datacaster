@@ -189,7 +189,7 @@ module Datacaster
         end
       end
 
-      must_be(Enumerable) & transform { |input|
+      must_be(Enumerable) & cast { |input|
         result =
           keys.map do |key|
             Array(key).reduce(input) do |result, k|
@@ -198,7 +198,8 @@ module Datacaster
               result
             end
           end
-        keys.length == 1 ? result.first : result
+        result = keys.length == 1 ? result.first : result
+        Datacaster::ValidResult(result)
       }
     end
 
