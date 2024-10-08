@@ -849,7 +849,7 @@ I18n keys:
 
 #### `transform_to_value(value)`
 
-Always returns ValidResult. The value is transformed to provided argument (disregarding the original value).
+Always returns ValidResult. The value is transformed to provided argument (disregarding the original value). If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
 
 Returned value is deeply frozen with [`Ractor::make_shareable`](https://docs.ruby-lang.org/en/master/Ractor.html#method-c-make_shareable) to prevent application bugs due to modification of unintentionally shared value. If that effect is undesired, use [`transform { value }`](#transform--value--) instead.
 
@@ -1070,6 +1070,8 @@ Useful to perform some side-effect such as raising an exception, making a log en
 
 Always returns ValidResult. Transforms the value: returns whatever the block has returned.
 
+If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
+
 ```ruby
 city =
   Datacaster.schema do
@@ -1086,6 +1088,8 @@ city.(name: "Denver", distance: "2.5") # => Datacaster::ValidResult({:name=>"Den
 #### `transform_if_present { |value| ... }`
 
 Always returns ValidResult. If the value is `Datacaster.absent`, then `Datacaster.absent` is returned (the block isn't called). Otherwise, works like [`transform`](#transform--value).
+
+If the resultant value is a Hash, all its keys are marked as validated and will survive `Datacaster.schema { ... }` call.
 
 ### Array schemas
 

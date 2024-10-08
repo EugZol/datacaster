@@ -1,15 +1,6 @@
 RSpec.describe Datacaster::Transaction do
   include Dry::Monads[:result]
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   it "returns true for Datacaster.instance?" do
     tx =
       Class.new do

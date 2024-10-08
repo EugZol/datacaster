@@ -161,7 +161,7 @@ module Datacaster
     end
 
     def pass
-      transform(&:itself)
+      cast { |v| Datacaster::ValidResult(v) }
     end
 
     def pass_if(base)

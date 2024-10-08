@@ -17,8 +17,6 @@ module Datacaster
       errors = {}
       result = {}
 
-      runtime.will_check!
-
       @fields.each do |key, validator|
         new_value = runtime.ignore_checks! { validator.with_runtime(runtime).(object) }
 
@@ -51,6 +49,9 @@ module Datacaster
           end
         end
       end
+
+      runtime.will_check!
+      result.keys.each { |key| runtime.checked_key!(key) }
 
       errors.delete_if { |_, v| v.empty? }
 

@@ -7,7 +7,11 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      Datacaster.ValidResult(Runtimes::Base.(runtime, @transform, object))
+      result = Runtimes::Base.(runtime, @transform, object)
+      if runtime.respond_to?(:checked_key!) && result.is_a?(Hash)
+        result.keys.each { |key| runtime.checked_key!(key) }
+      end
+      Datacaster::ValidResult(result)
     end
 
     def inspect

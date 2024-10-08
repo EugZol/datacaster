@@ -32,6 +32,7 @@ module Datacaster
       end
 
       def will_check!
+        return if @ignore
         @should_check_stack[-1] = true
       end
 
