@@ -3,15 +3,6 @@ require 'ostruct'
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   describe "using context node (#with_object_context)" do
     it "allows access to instance variables" do
       object = Object.new

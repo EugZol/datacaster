@@ -1,3 +1,3 @@
 module Datacaster
-  VERSION = "3.3.1"
+  VERSION = "4.0.1"
 end

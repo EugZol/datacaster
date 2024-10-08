@@ -7,7 +7,11 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      Datacaster.ValidResult(Runtimes::Base.(runtime, @transform, object))
+      result = Runtimes::Base.(runtime, @transform, object)
+      if runtime.respond_to?(:will_not_check!)
+        runtime.will_not_check!
+      end
+      Datacaster::ValidResult(result)
     end
 
     def inspect

@@ -5,15 +5,6 @@ RSpec.describe Datacaster do
   Key = Datacaster::I18nValues::Key
   Scope = Datacaster::I18nValues::Scope
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = I18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   describe 'i18n' do
     it 'returns default errors' do
       schema = Datacaster.schema { check { false } }

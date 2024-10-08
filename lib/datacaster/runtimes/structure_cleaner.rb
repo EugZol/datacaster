@@ -32,7 +32,12 @@ module Datacaster
       end
 
       def will_check!
+        return if @ignore
         @should_check_stack[-1] = true
+      end
+
+      def will_not_check!
+        @should_check_stack[-1] = false
       end
 
       # Notify current runtime that some child runtime has built schema,

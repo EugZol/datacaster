@@ -1,15 +1,6 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = I18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   describe 'active model validations' do
     subject do
       described_class.schema { integer & validate(numericality: {greater_than_or_equal_to: 18}) }

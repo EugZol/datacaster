@@ -1,15 +1,6 @@
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
-  before(:all) do
-    @i18n_module = Datacaster::Config.i18n_module
-    Datacaster::Config.i18n_module = Datacaster::SubstituteI18n
-  end
-
-  after(:all) do
-    Datacaster::Config.i18n_module = @i18n_module
-  end
-
   describe "cast_errors" do
     context "remaps errors with #cast_errors" do
       it "with transform_to_hash" do
