@@ -4,6 +4,10 @@ module Datacaster
   module Runtimes
     class UserContext < Base
       class ContextStruct
+        def self.context_has_key?(context, key)
+          context.respond_to?(:key?) && context.key?(key) || context.to_h.key?(key.to_sym)
+        end
+
         def initialize(context, node)
           @context = context
           @node = node
@@ -14,10 +18,7 @@ module Datacaster
             return super
           end
 
-          key_present = @context.respond_to?(:key?) && @context.key?(m) ||
-            @context.to_h.key?(m.to_sym)
-
-          if key_present && args.empty?
+          if self.class.context_has_key?(@context, m) && args.empty?
             return @context[m]
           end
 
@@ -30,6 +31,12 @@ module Datacaster
           rescue NoMethodError
             raise NoMethodError.new("Key #{m.inspect} is not found in the context")
           end
+        end
+
+        def has_key?(key)
+          self.class.context_has_key?(@context, key) || @node.class.send_to_parent(@node, :context).has_key?(key)
+        rescue NoMethodError
+          false
         end
       end
 
