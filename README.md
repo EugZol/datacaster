@@ -1547,6 +1547,18 @@ schema.with_context(five: 15).(nil)
 # => Datacaster::ValidResult(nil)
 ```
 
+Method `has_key?` could be used to determine whether key is available in the context
+
+```ruby
+schema =
+  Datacaster.schema do
+    check { context.has_key?(:five) }
+  end
+
+schema.with_context(five: 15).(nil)
+# => Datacaster::ValidResult(nil)
+```
+
 **Note**
 
 `context` can be accesed only in casters' blocks. It can't be used in schema definition itself:
