@@ -296,6 +296,12 @@ module Datacaster
 
     # Strict types
 
+    def numeric(error_key = nil)
+      error_keys = ['.numeric', 'datacaster.errors.numeric']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Numeric) }.i18n_key(*error_keys)
+    end
+
     def decimal(digits = 8, error_key = nil)
       error_keys = ['.decimal', 'datacaster.errors.decimal']
       error_keys.unshift(error_key) if error_key
@@ -353,6 +359,42 @@ module Datacaster
       error_keys = ['.integer32', 'datacaster.errors.integer32']
       error_keys.unshift(error_key) if error_key
       integer(error_key) & check { |x| x.abs <= 2_147_483_647 }.i18n_key(*error_keys)
+    end
+
+    def maximum(max, error_key = nil, inclusive: true)
+      subkey = 'lt'
+      subkey += 'eq' if inclusive
+
+      error_keys = [".maximum.#{subkey}", "datacaster.errors.maximum.#{subkey}"]
+
+      error_keys.unshift(error_key) if error_key
+
+      caster =
+        if inclusive
+          check { |x| x <= max }
+        else
+          check { |x| x < max }
+        end
+
+      numeric(error_key) & caster.i18n_key(*error_keys, max:)
+    end
+
+    def minimum(min, error_key = nil, inclusive: true)
+      subkey = 'gt'
+      subkey += 'eq' if inclusive
+
+      error_keys = [".minimum.#{subkey}", "datacaster.errors.minimum.#{subkey}"]
+
+      error_keys.unshift(error_key) if error_key
+
+      caster =
+        if inclusive
+          check { |x| x >= min }
+        else
+          check { |x| x > min }
+        end
+
+      numeric(error_key) & caster.i18n_key(*error_keys, min:)
     end
 
     def string(error_key = nil)

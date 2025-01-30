@@ -152,6 +152,34 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "numeric typecasting" do
+    subject { described_class.schema { numeric } }
+
+    it "passes integers" do
+      expect(subject.(2_147_483_647).to_dry_result).to eq Success(2_147_483_647)
+    end
+
+    it "passes floats" do
+      expect(subject.(1.33).to_dry_result).to eq Success(1.33)
+    end
+
+    it "passes decimals" do
+      expect(subject.(1.33.to_d).to_dry_result).to eq Success(1.33.to_d)
+    end
+
+    it "passes rationals" do
+      expect(subject.(2/3r).to_dry_result).to eq Success(2/3r)
+    end
+
+    it "passes complex numbers" do
+      expect(subject.(3i).to_dry_result).to eq Success(3i)
+    end
+
+    it "returns Failure on string numbers" do
+      expect(subject.("100").to_dry_result).to eq Failure(["is not a number"])
+    end
+  end
+
   describe "decimal typecasting" do
     subject { described_class.schema { decimal } }
 
@@ -181,6 +209,130 @@ RSpec.describe Datacaster do
 
     it "returns Failure on too big integers" do
       expect(subject.(2_147_483_648).to_dry_result).to eq Failure(["is not a 32-bit integer"])
+    end
+  end
+
+  describe "maximum typecasting" do
+    context "when inclusive implicitly" do
+      subject { described_class.schema { maximum(4, inclusive: true) } }
+
+      it "passes less than maximum" do
+        expect(subject.(3).to_dry_result).to eq Success(3)
+      end
+
+      it "passes equal to maximum" do
+        expect(subject.(4).to_dry_result).to eq Success(4)
+      end
+
+      it "doesn't pass greater than maximum" do
+        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than or equal to 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
+
+    context "when inclusive explicitly" do
+      subject { described_class.schema { maximum(4) } }
+
+      it "passes less than maximum" do
+        expect(subject.(3).to_dry_result).to eq Success(3)
+      end
+
+      it "passes equal to maximum" do
+        expect(subject.(4).to_dry_result).to eq Success(4)
+      end
+
+      it "doesn't pass greater than maximum" do
+        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than or equal to 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
+
+    context "when exclusive" do
+      subject { described_class.schema { maximum(4, inclusive: false) } }
+
+      it "passes less than maximum" do
+        expect(subject.(3).to_dry_result).to eq Success(3)
+      end
+
+      it "doesn't pass equal to maximum" do
+        expect(subject.(4).to_dry_result).to eq Failure(["4 should be less than 4"])
+      end
+
+      it "doesn't pass greater than maximum" do
+        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
+  end
+
+  describe "minimum typecasting" do
+    context "when inclusive implicitly" do
+      subject { described_class.schema { minimum(4, inclusive: true) } }
+
+      it "passes greater than minimum" do
+        expect(subject.(5).to_dry_result).to eq Success(5)
+      end
+
+      it "passes equal to minimum" do
+        expect(subject.(4).to_dry_result).to eq Success(4)
+      end
+
+      it "doesn't pass less than minimum" do
+        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than or equal to 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
+
+    context "when inclusive explicitly" do
+      subject { described_class.schema { minimum(4) } }
+
+      it "passes greater than minimum" do
+        expect(subject.(5).to_dry_result).to eq Success(5)
+      end
+
+      it "passes equal to minimum" do
+        expect(subject.(4).to_dry_result).to eq Success(4)
+      end
+
+      it "doesn't pass less than minimum" do
+        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than or equal to 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
+
+    context "when exclusive" do
+      subject { described_class.schema { minimum(4, inclusive: false) } }
+
+      it "passes greater than minimum" do
+        expect(subject.(5).to_dry_result).to eq Success(5)
+      end
+
+      it "doesn't pass equal to minimum" do
+        expect(subject.(4).to_dry_result).to eq Failure(["4 should be greater than 4"])
+      end
+
+      it "doesn't pass less than minimum" do
+        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than 4"])
+      end
+
+      it "doesn't pass non-numerics" do
+        expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
     end
   end
 

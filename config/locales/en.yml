@@ -15,7 +15,14 @@ en:
       integer: is not an integer
       integer32: is not a 32-bit integer
       iso8601: is not a string with ISO-8601 date and time
+      maximum:
+        lt: '%{value} should be less than %{max}'
+        lteq: '%{value} should be less than or equal to %{max}'
+      minimum:
+        gt: '%{value} should be greater than %{min}'
+        gteq: '%{value} should be greater than or equal to %{min}'
       must_be: "is not %{reference}"
+      numeric: is not a number
       pattern: has invalid format
       relate: "%{left} should be %{op} %{right}"
       responds_to: "does not respond to %{reference}"

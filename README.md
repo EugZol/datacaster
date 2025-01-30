@@ -26,10 +26,13 @@ It is currently used in production in several projects (mainly as request parame
     - [`float(error_key = nil)`](#floaterror_key--nil)
     - [`hash_value(error_key = nil)`](#hash_valueerror_key--nil)
     - [`integer(error_key = nil)`](#integererror_key--nil)
+    - [`numeric(error_key = nil)`](#numericerror_key--nil)
     - [`string(error_key = nil)`](#stringerror_key--nil)
   - [Convenience types](#convenience-types)
     - [`hash_with_symbolized_keys(error_key = nil)`](#hash_with_symbolized_keyserror_key--nil)
     - [`integer32(error_key = nil)`](#integer32error_key--nil)
+    - [`maximum(max, error_key = nil, inclusive: true)`](#maximummax-error_key--nil-inclusive-true)
+    - [`minimum(min, error_key = nil, inclusive: true)`](#minimummin-error_key--nil-inclusive-true)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
     - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
     - [`uuid(error_key = nil)`](#uuiderror_key--nil)
@@ -500,6 +503,12 @@ Returns ValidResult if and only if provided value is an integer. Doesn't transfo
 
 I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
+#### `numeric(error_key = nil)`
+
+Returns ValidResult if and only if provided value is a number. Doesn't transform the value.
+
+I18n keys: `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`.
+
 #### `string(error_key = nil)`
 
 Returns ValidResult if and only if provided value is a string. Doesn't transform the value.
@@ -522,6 +531,26 @@ I18n keys:
 
 * not an integer – `error_key`, `'.integer'`, `'datacaster.errors.integer'`
 * too big – `error_key`, `'.integer32'`, `'datacaster.errors.integer32'`
+
+#### `maximum(max, error_key = nil, inclusive: true)`
+
+Returns ValidResult if and only if provided value is a number and is less than specified. Doesn't transform the value.
+
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* is less (when `inclusive` is `true`) – `error_key`, `'.maximum.lteq'`, `'datacaster.errors.maximum.lteq'`
+* is less (when `inclusive` is `false`) – `error_key`, `'.maximum.lt'`, `'datacaster.errors.maximum.lt'`
+
+#### `minimum(min, error_key = nil, inclusive: true)`
+
+Returns ValidResult if and only if provided value is a number and is greater than specified. Doesn't transform the value.
+
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* is greater (when `inclusive` is `true`) – `error_key`, `'.minimum.gteq'`, `'datacaster.errors.minimum.gteq'`
+* is greater (when `inclusive` is `false`) – `error_key`, `'.minimum.gt'`, `'datacaster.errors.minimum.gt'`
 
 #### `non_empty_string(error_key = nil)`
 
