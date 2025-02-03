@@ -505,7 +505,7 @@ I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
 #### `numeric(error_key = nil)`
 
-Returns ValidResult if and only if provided value is a number. Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number (Ruby's `Numeric`). Doesn't transform the value.
 
 I18n keys: `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`.
 
@@ -534,7 +534,7 @@ I18n keys:
 
 #### `maximum(max, error_key = nil, inclusive: true)`
 
-Returns ValidResult if and only if provided value is a number and is less than specified. Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number and is less than `max`. If `inclusive` set to true, provided value should be less than or equal to `max`. Doesn't transform the value.
 
 I18n keys:
 
@@ -544,7 +544,7 @@ I18n keys:
 
 #### `minimum(min, error_key = nil, inclusive: true)`
 
-Returns ValidResult if and only if provided value is a number and is greater than specified. Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number and is greater than `min`. If `inclusive` set to true, provided value should be greater than or equal to `min`. Doesn't transform the value.
 
 I18n keys:
 
