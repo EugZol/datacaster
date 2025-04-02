@@ -225,7 +225,7 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass greater than maximum" do
-        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than or equal to 4"])
+        expect(subject.(5).to_dry_result).to eq Failure(["should be less than or equal to 4"])
       end
 
       it "doesn't pass non-numerics" do
@@ -245,7 +245,7 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass greater than maximum" do
-        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than or equal to 4"])
+        expect(subject.(5).to_dry_result).to eq Failure(["should be less than or equal to 4"])
       end
 
       it "doesn't pass non-numerics" do
@@ -261,11 +261,11 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass equal to maximum" do
-        expect(subject.(4).to_dry_result).to eq Failure(["4 should be less than 4"])
+        expect(subject.(4).to_dry_result).to eq Failure(["should be less than 4"])
       end
 
       it "doesn't pass greater than maximum" do
-        expect(subject.(5).to_dry_result).to eq Failure(["5 should be less than 4"])
+        expect(subject.(5).to_dry_result).to eq Failure(["should be less than 4"])
       end
 
       it "doesn't pass non-numerics" do
@@ -287,7 +287,7 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass less than minimum" do
-        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than or equal to 4"])
+        expect(subject.(3).to_dry_result).to eq Failure(["should be greater than or equal to 4"])
       end
 
       it "doesn't pass non-numerics" do
@@ -307,7 +307,7 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass less than minimum" do
-        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than or equal to 4"])
+        expect(subject.(3).to_dry_result).to eq Failure(["should be greater than or equal to 4"])
       end
 
       it "doesn't pass non-numerics" do
@@ -323,11 +323,11 @@ RSpec.describe Datacaster do
       end
 
       it "doesn't pass equal to minimum" do
-        expect(subject.(4).to_dry_result).to eq Failure(["4 should be greater than 4"])
+        expect(subject.(4).to_dry_result).to eq Failure(["should be greater than 4"])
       end
 
       it "doesn't pass less than minimum" do
-        expect(subject.(3).to_dry_result).to eq Failure(["3 should be greater than 4"])
+        expect(subject.(3).to_dry_result).to eq Failure(["should be greater than 4"])
       end
 
       it "doesn't pass non-numerics" do
