@@ -373,7 +373,7 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
       check { |x| x.is_a?(Hash) }.
         i18n_key(*error_keys).
-        json_schema(type: 'object')
+        json_schema(type: 'object', additionalProperties: true)
     end
 
     def hash_with_symbolized_keys(error_key = nil)

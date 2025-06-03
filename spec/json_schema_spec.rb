@@ -182,29 +182,21 @@ RSpec.describe Datacaster do
       expect(schema.to_json_schema).to eq(
         "oneOf" => [
           {
-            "type" => "object",
             "properties" => {
-              "kind" => {
-                "enum" => ['string']
-              },
-              "id" => {
-                "type" => "string"
-              }
+              "id" => {"type" => "string"},
+              "kind" => {"enum" => ["string"], "type" => "string"},
             },
-            "required" => %w(id)
+            "required" => ["id"],
+            "type" => "object",
           },
           {
-            "type" => "object",
             "properties" => {
-              "kind" => {
-                "enum" => ['integer']
-              },
-              "id" => {
-                "type" => "integer"
-              }
+              "id" => {"type" => "integer"},
+              "kind" => {"enum" => ["integer"], "type" => "string"},
             },
-            "required" => %w(id)
-          }
+            "required" => ["id"],
+            "type" => "object",
+          },
         ]
       )
     end
@@ -223,40 +215,35 @@ RSpec.describe Datacaster do
       expect(schema.to_json_schema).to eq(
         "oneOf" => [
           {
-            "properties"=>{
-              "id"=>{"type"=>"string"},
-              "kind"=>{"enum"=>["string"]},
+            "properties" => {
+              "id" => {"type" => "string"},
+              "kind" => {"enum" => ["string"], "type" => "string"},
             },
-            "required"=>["id"],
-            "type"=>"object",
+            "required" => ["id"],
+            "type" => "object",
           },
           {
-            "properties"=>{
-              "id"=>{"type"=>"integer"},
-              "kind"=>{"enum"=>["integer"]},
+            "properties" => {
+              "id" => {"type" => "integer"},
+              "kind" => {"enum" => ["integer"], "type" => "string"},
             },
-            "required"=>["id"],
-            "type"=>"object",
+            "required" => ["id"],
+            "type" => "object",
           },
           {
-            "properties"=>{
-              "id"=>{
-                "pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/",
-                "type"=>"string",
-              },
-              "kind"=>{"enum"=>["uuid"]},
+            "properties" => {
+              "id" => {"pattern" => "/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type" => "string"},
+              "kind" => {"enum" => ["uuid"], "type" => "string"},
             },
-            "required"=>["id"],
-            "type"=>"object",
+            "required" => ["id"],
+            "type" => "object",
           },
           {
-            "properties"=>{
-              "id"=>{"type"=>"boolean"},
-            },
-            "required"=>["id"],
-            "type"=>"object",
+            "properties" => {"id" => {"type" => "boolean"}},
+            "required" => ["id"],
+            "type" => "object",
           },
-        ],
+        ]
       )
     end
 
@@ -288,31 +275,31 @@ RSpec.describe Datacaster do
       expect(schema.to_json_schema).to eq(
         "oneOf" => [
           {
-            "properties"=>{
-              "kind"=>{"enum"=>[ "string" ]},
-              "other_string"=>{"type"=>"string"},
-              "string"=>{"type"=>"string"},
+            "properties" => {
+              "kind" => {"enum" => ["string"], "type" => "string"},
+              "other_string" => {"type" => "string"},
+              "string" => {"type" => "string"},
             },
-            "required"=>[ "kind", "other_string", "string" ],
-            "type"=>"object",
+            "required" => ["kind", "other_string", "string"],
+            "type" => "object",
           },
           {
-            "properties"=>{
-              "integer"=>{},
-              "kind"=>{"enum"=>[ "integer" ]},
-              "other_integer"=>{"type"=>"string"},
-              "rets_integer"=>{"type"=>"integer"},
+            "properties" => {
+              "integer" => {},
+              "kind" => {"enum" => ["integer"], "type" => "string"},
+              "other_integer" => {"type" => "string"},
+              "rets_integer" => {"type" => "integer"},
             },
-            "required"=>[ "kind", "rets_integer", "other_integer" ],
-            "type"=>"object",
+            "required" => ["kind", "rets_integer", "other_integer"],
+            "type" => "object",
           },
           {
-            "properties"=>{
-              "kind"=>{"enum"=>[ "none" ]},
-              "rest_none"=>{"type"=>"string"},
+            "properties" => {
+              "kind" => {"enum" => ["none"], "type" => "string"},
+              "rest_none" => {"type" => "string"},
             },
-            "required"=>[ "kind", "rest_none" ],
-            "type"=>"object",
+            "required" => ["kind", "rest_none"],
+            "type" => "object",
           },
         ]
       )
@@ -435,7 +422,10 @@ RSpec.describe Datacaster do
 
       expect(schema.to_json_schema).to eq(
         {
-          "anyOf" => [{"enum"=>[nil]}, {"enum"=>["sdf"]}]
+          "anyOf" => [
+            { "type" => "null" },
+            { "enum"=>["sdf"] },
+          ]
         },
       )
     end
@@ -449,7 +439,10 @@ RSpec.describe Datacaster do
       expect(schema.to_json_schema).to eq(
         {
           "items" => {
-            "anyOf"=>[{"enum"=>[nil]}, {"enum"=>["sdf"]}],
+            "anyOf"=>[
+              { "type" => "null" },
+              { "enum"=>["sdf"] },
+            ],
           },
           "type" => "array",
         },
@@ -466,7 +459,7 @@ RSpec.describe Datacaster do
 
       expect(schema.to_json_schema).to eq(
         {
-          "properties" => {"test"=>{"items"=>{"anyOf"=>[{"enum"=>[nil]}, {"enum"=>["sdf"]}]}, "type"=>"array"}},
+          "properties" => {"test"=>{"items"=>{"anyOf"=>[{ "type" => "null" }, {"enum"=>["sdf"]}]}, "type"=>"array"}},
           "required" => ["test"],
           "type" => "object",
         },
@@ -533,7 +526,7 @@ RSpec.describe Datacaster do
 
       expect(schema.to_json_schema).to eq({
        "anyOf" => [
-         {"enum"=>[nil]},
+         { "type" => "null" },
          {"items"=>{"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"}, "type"=>"array"},
        ],
       })
