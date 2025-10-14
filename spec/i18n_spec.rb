@@ -65,7 +65,7 @@ RSpec.describe Datacaster do
       expect(schema.(1).raw_errors).to eq [Key.new('namespace.not_a_hash', value: 1)]
 
       schema = Datacaster.schema do
-        array_of(check { false }).i18n_map_keys(
+        array_of(check { false }, allow_empty: false).i18n_map_keys(
           '.array' => '.not_an_array',
           '.empty' => '.empty_array'
         )

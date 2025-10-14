@@ -920,17 +920,15 @@ RSpec.describe Datacaster do
       )
     end
 
-    it "fails on empty array" do
-      # empty arrays could be checked with "compare([])" if needed
-      expect(subject.([]).to_dry_result).to eq Failure(["should not be empty"])
+    it "succeeds on empty array" do
+      expect(subject.([]).to_dry_result).to eq Success([])
     end
 
-    context 'when schema allows empty' do
-      subject { described_class.schema { array_schema(integer, allow_empty: true) } }
+    context 'when schema disallows empty' do
+      subject { described_class.schema { array_schema(integer, allow_empty: false) } }
 
       it "allows empty array" do
-        # empty arrays could be checked with "compare([])" if needed
-        expect(subject.([]).to_dry_result).to eq Success([])
+        expect(subject.([]).to_dry_result).to eq Failure(["should not be empty"])
       end
     end
   end

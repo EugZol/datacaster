@@ -1,6 +1,6 @@
 module Datacaster
   class ArraySchema < Base
-    def initialize(element_caster, error_keys = {}, allow_empty: false)
+    def initialize(element_caster, error_keys = {}, allow_empty: true)
       @element_caster = element_caster
       @allow_empty = allow_empty
 

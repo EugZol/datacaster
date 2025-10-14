@@ -1128,13 +1128,13 @@ To define compound data type, array of 'something', use `array_schema(something)
 salaries = Datacaster.schema { array_of(integer) }
 
 salaries.([1000, 2000, 3000]) # Datacaster::ValidResult([1000, 2000, 3000])
+salaries.([])                 # Datacaster::ValidResult([])
 
 salaries.(["one thousand"])   # Datacaster::ErrorResult({0=>["is not an integer"]})
 salaries.(:not_an_array)      # Datacaster::ErrorResult(["should be an array"])
-salaries.([])                 # Datacaster::ErrorResult(["should not be empty"])
 ```
 
-To allow empty array use the following construct: `compare([]) | array_of(...)`.
+To disallow empty array use the following construct: `array_of(..., allow_empty: false)`.
 
 If you want to define an array of hashes, [shortcut definition](#shortcut-nested-definitions) could be used: instead of `array_of(hash_schema({...}))` use `array_of({...})`:
 
