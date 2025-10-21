@@ -34,6 +34,7 @@ It is currently used in production in several projects (mainly as request parame
     - [`maximum(max, error_key = nil, inclusive: true)`](#maximummax-error_key--nil-inclusive-true)
     - [`minimum(min, error_key = nil, inclusive: true)`](#minimummin-error_key--nil-inclusive-true)
     - [`non_empty_string(error_key = nil)`](#non_empty_stringerror_key--nil)
+    - [`non_empty_array(error_keys = {}`](#non_empty_arrayerror_keys--)
     - [`pattern(regexp, error_key = nil)`](#patternregexp-error_key--nil)
     - [`uuid(error_key = nil)`](#uuiderror_key--nil)
   - [Special types](#special-types)
@@ -159,7 +160,7 @@ validator.("test")  # Datacaster::ErrorResult(["is invalid"])
 
 In the code above we ensure that validated value is:
 
-a) a string,  
+a) a string,\
 b) has length > 5.
 
 If first condition is not met, second one is not evaluated at all (i.e. evaluation is always "short-circuit", just as one might expect).
@@ -203,9 +204,9 @@ Validating hashes is the main case scenario for datacaster. Several specific con
 
 Let's assume we want to validate that a hash (which represents data about a person):
 
-a) is, in fact, a Hash;  
-b) has exactly 2 keys, `name` and `salary`,  
-c) key 'name' is a string,  
+a) is, in fact, a Hash;\
+b) has exactly 2 keys, `name` and `salary`,\
+c) key 'name' is a string,\
 d) key 'salary' is an integer:
 
 ```ruby
@@ -561,6 +562,15 @@ I18n keys:
 * not a string – `error_key`, `'.string'`, `'datacaster.errors.string'`
 * is empty – `error_key`, `'.non_empty_string'`, `'datacaster.errors.non_empty_string'`
 
+#### `non_empty_array(error_keys = {})`
+
+Returns ValidResult if and only if provided value is an array and is not empty. Doesn't transform the value.
+
+I18n keys:
+
+* not an array – `error_keys[:array]`, `'.array'`, `'datacaster.errors.array'`
+* empty array – `error_keys[:empty]`, `'.empty'`, `'datacaster.errors.empty'`
+
 #### `pattern(regexp, error_key = nil)`
 
 Returns ValidResult if and only if provided value is a string and satisfies regexp. Doesn't transform the value. Don't forget to provide start/end markers in the regexp if needed, e.g. `/\A\d+\z/` for digits-only string.
@@ -742,7 +752,7 @@ I18n keys:
 
 Returns ValidResult if and only if the value `#is_a?(klass)`. Doesn't transform the value.
 
-I18n keys: `error_key`,  `'.must_be'`, `'datacaster.errors.must_be'`. Adds `reference` i18n variable, setting it to `klass.name`. 
+I18n keys: `error_key`,  `'.must_be'`, `'datacaster.errors.must_be'`. Adds `reference` i18n variable, setting it to `klass.name`.
 
 #### `optional(base, on: nil)`
 
@@ -1162,12 +1172,12 @@ Notice that extra keys of inner hashes could be validated only if each element i
 
 Formally, `array_of(x, error_keys = {})` will return ValidResult if and only if:
 
-a) provided value implements basic array methods (`#map`, `#zip`),  
-b) provided value is not `#empty?`,  
+a) provided value implements basic array methods (`#map`, `#zip`),\
+b) provided value is not `#empty?`,\
 c) each element of the provided value passes validation of `x`.
 
-If a) fails, `ErrorResult(["should be an array"]) is returned. 
-If b) fails, `ErrorResult(["should not be empty"])` is returned.  
+If a) fails, `ErrorResult(["should be an array"])` is returned.\
+If b) fails, `ErrorResult(["should not be empty"])` is returned.\
 If c) fails, `ErrorResult({0 => ..., 1 => ...})` is returned. Wrapped hash contains keys which correspond to initial array's indices, and values correspond to failure returned from `x` validator, called for the corresponding element.
 
 Array schema transforms array if inner type (`x`) transforms element (in this case `array_schema` works more or less like `map` function). Otherwise, it doesn't transform.
@@ -1201,12 +1211,12 @@ person.(name: "John Smith", salary: "100_000")
 
 Formally, hash schema returns ValidResult if and only if:
 
-a) provided value `is_a?(Hash)`,  
-b) all values, fetched by keys mentioned in `hash_schema(...)` definition, pass corresponding validations,  
+a) provided value `is_a?(Hash)`,\
+b) all values, fetched by keys mentioned in `hash_schema(...)` definition, pass corresponding validations,\
 c) after all checks (including logical operators), there are no unchecked keys in the hash.
 
-If a) fails, `ErrorResult(["is not a hash"])` is returned.  
-if b) fails, `ErrorResult(key1 => [errors...], key2 => [errors...])` is returned. Each key of wrapped "error hash" corresponds to the key of validated hash, and each value of "error hash" contains array of errors, returned by the corresponding validator.  
+If a) fails, `ErrorResult(["is not a hash"])` is returned.\
+if b) fails, `ErrorResult(key1 => [errors...], key2 => [errors...])` is returned. Each key of wrapped "error hash" corresponds to the key of validated hash, and each value of "error hash" contains array of errors, returned by the corresponding validator.\
 If b) is fulfilled, then and only then validated hash is checked for extra keys. If they are found, `ErrorResult(extra_key_1 => ["should be absent"], ...)` is returned.
 
 I18n keys:
@@ -1500,10 +1510,10 @@ Of course, order of keys in the definition hash doesn't change the result.
 
 Formally, `transform_to_hash`:
 
-a) transforms (any) value to hash;  
-b) this hash will contain keys listed in `transform_to_hash` definition;  
-c) value of these keys will be: initial value (*not the corresponding key of it, the value altogether*) transformed with the corresponding validator/type;  
-d) if any of the values from c) happen to be `Datacaster.absent`, this value *with its key* is removed from the resultant hash;  
+a) transforms (any) value to hash;\
+b) this hash will contain keys listed in `transform_to_hash` definition;\
+c) value of these keys will be: initial value (*not the corresponding key of it, the value altogether*) transformed with the corresponding validator/type;\
+d) if any of the values from c) happen to be `Datacaster.absent`, this value *with its key* is removed from the resultant hash;\
 e) if the initial value happens to also be a hash, all its unvalidated (unused) keys are merged to the resultant hash.
 
 `transform_to_hash` will return ValidResult if and only if all transformations return ValidResults.

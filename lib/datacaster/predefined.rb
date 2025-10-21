@@ -451,6 +451,10 @@ module Datacaster
       string(error_key) & check { |x| !x.empty? }.i18n_key(*error_keys)
     end
 
+    def non_empty_array(error_keys = {})
+      array_of(any, error_keys, allow_empty: false)
+    end
+
     def uuid(error_key = nil)
       error_keys = ['.uuid', 'datacaster.errors.uuid']
       error_keys.unshift(error_key) if error_key

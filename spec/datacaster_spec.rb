@@ -132,6 +132,22 @@ RSpec.describe Datacaster do
     end
   end
 
+  describe "non-empty array typecasting" do
+    subject { described_class.schema { non_empty_array } }
+
+    it "passes strings" do
+      expect(subject.(["test"]).to_dry_result).to eq Success(["test"])
+    end
+
+    it "returns Failure on integeres" do
+      expect(subject.(1).to_dry_result).to eq Failure(["should be an array"])
+    end
+
+    it "returns Failure on empty arrays" do
+      expect(subject.([]).to_dry_result).to eq Failure(["should not be empty"])
+    end
+  end
+
   describe "UUID string typecasting" do
     subject { described_class.schema { uuid } }
 
