@@ -366,9 +366,11 @@ module Datacaster
       error_keys = ['.pattern', 'datacaster.errors.pattern']
       error_keys.unshift(error_key) if error_key
 
+      ecma_regexp = JsRegex.new(regexp).to_s
+
       string(error_key) & check { |x| x.match?(regexp) }.
-        i18n_key(*error_keys, reference: regexp.inspect).
-        json_schema(pattern: JsRegex.new(regexp).to_s)
+        i18n_key(*error_keys, reference: ecma_regexp).
+        json_schema(pattern: ecma_regexp)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
