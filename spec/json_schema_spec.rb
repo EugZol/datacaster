@@ -232,7 +232,7 @@ RSpec.describe Datacaster do
           },
           {
             "properties" => {
-              "id" => {"pattern" => "/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type" => "string"},
+              "id" => {"format" => "uuid", "type" => "string"},
               "kind" => {"enum" => ["uuid"], "type" => "string"},
             },
             "required" => ["id"],
@@ -499,10 +499,7 @@ RSpec.describe Datacaster do
         end
 
       expect(schema.to_json_schema).to eq(
-        {
-          "type"=>"string",
-          "pattern" => "/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/"
-        },
+        {"format" => "uuid", "type" => "string"}
       )
     end
 
@@ -513,7 +510,7 @@ RSpec.describe Datacaster do
         end
 
       expect(schema.to_json_schema).to eq({
-       "items" => {"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"},
+       "items" => {"format" => "uuid", "type" => "string"},
        "type" => "array",
       })
     end
@@ -527,7 +524,7 @@ RSpec.describe Datacaster do
       expect(schema.to_json_schema).to eq({
        "anyOf" => [
          { "type" => "null" },
-         {"items"=>{"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"}, "type"=>"array"},
+         {"items"=>{"format" => "uuid", "type" => "string"}, "type"=>"array"},
        ],
       })
     end
@@ -539,7 +536,7 @@ RSpec.describe Datacaster do
         end
 
       expect(schema.to_json_schema).to eq({
-       "items" => {"pattern"=>"/\\A\\h{8}-\\h{4}-\\h{4}-\\h{4}-\\h{12}\\z/", "type"=>"string"},
+       "items" => {"format" => "uuid", "type" => "string"},
        "type" => "array",
       })
     end
