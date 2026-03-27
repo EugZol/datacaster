@@ -1,3 +1,5 @@
+require 'js_regex'
+
 module Datacaster
   module Predefined
     extend self
@@ -363,8 +365,12 @@ module Datacaster
     def pattern(regexp, error_key = nil)
       error_keys = ['.pattern', 'datacaster.errors.pattern']
       error_keys.unshift(error_key) if error_key
-      string(error_key) & check { |x| x.match?(regexp) }.i18n_key(*error_keys, reference: regexp.inspect).
-        json_schema(pattern: regexp.inspect)
+
+      ecma_regexp = JsRegex.new(regexp).to_s
+
+      string(error_key) & check { |x| x.match?(regexp) }.
+        i18n_key(*error_keys, reference: ecma_regexp).
+        json_schema(pattern: ecma_regexp)
     end
 
     # 'hash' would be a bad method name, because it would override built in Object#hash
@@ -458,7 +464,9 @@ module Datacaster
     def uuid(error_key = nil)
       error_keys = ['.uuid', 'datacaster.errors.uuid']
       error_keys.unshift(error_key) if error_key
-      pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, error_key).i18n_key(*error_keys)
+      pattern(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, error_key).
+        i18n_key(*error_keys).
+        json_schema { { 'type' => 'string', 'format' => 'uuid' } }
     end
 
     # Form request types
