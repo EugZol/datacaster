@@ -161,14 +161,14 @@ module Datacaster
         return (absent | base).json_schema { base.to_json_schema }.json_schema_attributes(required: false)
       end
 
-      caster = cast do |x|
-        if x == Datacaster.absent ||
-          (!on.nil? && x.respond_to?(on) && x.public_send(on))
-          Datacaster.ValidResult(Datacaster.absent)
-        else
-          base.(x)
-        end
+      unless on.is_a?(Symbol)
+        raise RuntimeError, "`on` should be a Symbol"
       end
+
+      caster =
+        absent |
+          (check { |x| x.respond_to?(on) && x.public_send(on) } & transform { Datacaster.absent }) |
+          base
 
       caster
         .json_schema(base.to_json_schema)

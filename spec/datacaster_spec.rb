@@ -386,6 +386,17 @@ RSpec.describe Datacaster do
       expect(schema.(Datacaster.absent).to_dry_result).to eq Success(Datacaster.absent)
     end
 
+    it "preserves the runtime context for structural casters with on:" do
+      schema = described_class.schema do
+        optional(
+          hash_schema(name: optional(string, on: :nil?)),
+          on: :nil?
+        )
+      end
+
+      expect(schema.(name: "Jane").to_dry_result).to eq Success(name: "Jane")
+    end
+
     it "passes empty strings" do
       expect(subject.("").to_dry_result).to eq Success("")
     end
