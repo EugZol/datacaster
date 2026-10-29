@@ -9,6 +9,12 @@ module Datacaster
       first.merge(second.to_h, &merger)
     end
 
+    # Merges checked schemas key by key: a key accepted whole (true) on either side
+    # stays accepted whole, nested checks on both sides combine
+    def merge_checks!(into, from)
+      into.merge!(from) { |_, a, b| a == true || b == true ? true : merge_checks!(a, b) }
+    end
+
     def deep_freeze(value, copy: true)
       Ractor.make_shareable(value, copy:)
     end

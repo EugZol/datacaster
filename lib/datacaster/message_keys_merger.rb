@@ -7,11 +7,12 @@ module Datacaster
     def cast(object, runtime:)
       return Datacaster.ErrorResult(I18nValues::Key.new(['.hash_value', 'datacaster.errors.hash_value'], value: object)) unless object.is_a?(Hash)
 
-      result = set_initial_value(object)
+      hash_merger = @keys.any? { |k| object[k].is_a?(Hash) }
+      result = hash_merger ? {} : []
 
       @keys.each do |k|
         result =
-          if need_hash_merger?(object)
+          if hash_merger
             merge_hash(result, object[k])
           else
             merge_array_or_scalar(result, object[k])
@@ -26,15 +27,6 @@ module Datacaster
     end
 
     private
-
-    def set_initial_value(object)
-      need_hash_merger?(object) ? {} : []
-    end
-
-    def need_hash_merger?(object)
-      @need_hash_merger =
-        @need_hash_merger.nil? ? @keys.any? { |k| object[k].is_a?(Hash) } : @need_hash_merger
-    end
 
     def merge_array_or_scalar(unit, merge_with)
       merge_with = [merge_with] unless merge_with.is_a?(Array)

@@ -401,6 +401,22 @@ RSpec.describe Datacaster do
       )
     end
 
+    it "renders schemas with optional(..., on: ...) as the base schema" do
+      schema =
+        Datacaster.schema do
+          optional(compare(nil) | compare('sdf'), on: :nil?)
+        end
+
+      expect(schema.to_json_schema).to eq(
+        {
+          "anyOf" => [
+            {"type" => "null"},
+            {"enum" => ["sdf"]}
+          ]
+        },
+      )
+    end
+
     it "renders schemas with default(...)" do
       schema =
         Datacaster.schema do

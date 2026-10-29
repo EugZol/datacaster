@@ -8,8 +8,8 @@ module Datacaster
 
       private
 
-      def transform_errors(errors)
-        result = @caster.with_runtime(@runtime).(errors)
+      def transform_errors(errors, runtime)
+        result = @caster.with_runtime(runtime).(errors)
         if result.valid?
           result.value
         else

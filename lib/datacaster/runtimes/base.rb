@@ -38,6 +38,10 @@ module Datacaster
         !@parent.nil? && @parent.respond_to?(m, include_private)
       end
 
+      def record_checks_on_success(&block)
+        @parent ? @parent.record_checks_on_success(&block) : yield
+      end
+
       def after_call!(sender)
         @parent.after_call!(sender) if @parent
       end

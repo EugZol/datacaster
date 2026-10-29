@@ -63,7 +63,7 @@ module Datacaster
       end
 
       @ons.each do |check, clause|
-        result = check.with_runtime(runtime).(switch_result)
+        result = runtime.record_checks_on_success { check.with_runtime(runtime).(switch_result) }
         next unless result.valid?
 
         runtime.checked_key!(@pick_key) if !@pick_key.nil? && !@pick_key.is_a?(Array)

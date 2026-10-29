@@ -53,5 +53,25 @@ RSpec.describe Datacaster do
       expect(a_hash.({}).to_dry_result).to eq Success({})
       expect(a_hash.(some: :thing, any: :thing).to_dry_result).to eq Success(some: :thing, any: :thing)
     end
+
+    it 'combines checks of partial schemas on the same nested key' do
+      caster =
+        Datacaster.schema do
+          Datacaster.partial_schema { hash_schema(a: hash_schema(x: string)) } &
+            Datacaster.partial_schema { hash_schema(a: hash_schema(y: string)) }
+        end
+
+      expect(caster.(a: {x: '1', y: '2'}).to_dry_result).to eq Success(a: {x: '1', y: '2'})
+    end
+
+    it 'keeps a key accepted whole when a partial schema checks inside it' do
+      caster =
+        Datacaster.schema do
+          hash_schema(a: pass) &
+            Datacaster.partial_schema { hash_schema(a: hash_schema(y: string)) }
+        end
+
+      expect(caster.(a: {x: '1', y: '2'}).to_dry_result).to eq Success(a: {x: '1', y: '2'})
+    end
   end
 end
