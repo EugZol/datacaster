@@ -21,26 +21,26 @@ module Datacaster
         Runtimes::StructureCleaner.new(parent)
       end
 
-      def transform_result(result)
+      def transform_result(result, runtime)
         return result unless result.valid?
-        result = cast_success(result)
+        result = cast_success(result, runtime)
 
         # Notify parent runtime of current runtime's schema
-        unless @runtime.unchecked?
-          parent_runtime = @runtime.instance_variable_get(:@parent)
+        unless runtime.unchecked?
+          parent_runtime = runtime.instance_variable_get(:@parent)
           if parent_runtime.respond_to?(:checked_schema!)
-            parent_runtime.checked_schema!(@runtime.checked_schema)
+            parent_runtime.checked_schema!(runtime.checked_schema)
           end
         end
 
         result
       end
 
-      def cast_success(result)
+      def cast_success(result, runtime)
         return result if @strategy == :pass
-        return result if @runtime.unchecked?
+        return result if runtime.unchecked?
 
-        cast_value(result, @runtime.checked_schema)
+        cast_value(result, runtime.checked_schema)
       end
 
       def cast_value(result, schema)

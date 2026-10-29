@@ -5,9 +5,9 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      @runtime = create_runtime(runtime)
-      result = @base.with_runtime(@runtime).call(object)
-      transform_result(result)
+      runtime = create_runtime(runtime)
+      result = @base.with_runtime(runtime).call(object)
+      transform_result(result, runtime)
     end
 
     def to_json_schema
@@ -28,23 +28,19 @@ module Datacaster
       parent
     end
 
-    def runtime
-      @runtime
-    end
-
-    def transform_result(result)
+    def transform_result(result, runtime)
       if result.valid?
-        Datacaster.ValidResult(transform_success(result.value))
+        Datacaster.ValidResult(transform_success(result.value, runtime))
       else
-        Datacaster.ErrorResult(transform_errors(result.raw_errors))
+        Datacaster.ErrorResult(transform_errors(result.raw_errors, runtime))
       end
     end
 
-    def transform_success(value)
+    def transform_success(value, _runtime)
       value
     end
 
-    def transform_errors(errors)
+    def transform_errors(errors, _runtime)
       errors
     end
   end

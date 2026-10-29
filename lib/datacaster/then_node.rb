@@ -17,7 +17,7 @@ module Datacaster
         raise ArgumentError.new('Datacaster: use "a & b" instead of "a.then(b)" when there is no else-clause')
       end
 
-      left_result = @left.with_runtime(runtime).(object)
+      left_result = runtime.record_checks_on_success { @left.with_runtime(runtime).(object) }
 
       if left_result.valid?
         @then.with_runtime(runtime).(left_result.value)

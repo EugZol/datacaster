@@ -21,8 +21,9 @@ module Datacaster
           return
         end
 
-        @pointer_stack.last[key] ||= {}
-        @pointer_stack.push(@pointer_stack.last[key])
+        entry = (@pointer_stack.last[key] ||= {})
+        # A key checked unconditionally stays so; checks made inside it are dropped
+        @pointer_stack.push(entry == true ? {} : entry)
         @should_check_stack.push(false)
         result = yield if block_given?
         was_checked = @should_check_stack.pop
@@ -53,8 +54,31 @@ module Datacaster
         # Child runtime's schema should be merged with current runtime's schema
         else
           will_check!
-          @pointer_stack[-1].merge!(schema)
+          Utils.merge_checks!(@pointer_stack[-1], schema)
         end
+      end
+
+      # Records the checks made by the block only if its result is valid,
+      # as a nested schema reports its checks to the parent only on success
+      def record_checks_on_success
+        level = @pointer_stack[-1]
+        saved_should_check = @should_check_stack[-1]
+        @pointer_stack[-1] = {}
+
+        result = yield
+        branch = @pointer_stack[-1]
+        @pointer_stack[-1] = level
+
+        if result.valid?
+          if branch == true
+            @pointer_stack[-1] = true unless level == true
+          elsif level != true
+            Utils.merge_checks!(level, branch)
+          end
+        else
+          @should_check_stack[-1] = saved_should_check
+        end
+        result
       end
 
       def ignore_checks!(&block)

@@ -6,7 +6,7 @@ module Datacaster
     end
 
     def cast(object, runtime:)
-      left_result = @left.with_runtime(runtime).(object)
+      left_result = runtime.record_checks_on_success { @left.with_runtime(runtime).(object) }
 
       return left_result if left_result.valid?
 

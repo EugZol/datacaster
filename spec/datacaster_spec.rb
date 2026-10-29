@@ -207,6 +207,10 @@ RSpec.describe Datacaster do
       expect(subject.(1.234).to_dry_result).to eq Success(BigDecimal("1.23400000"))
     end
 
+    it "keeps float precision" do
+      expect(subject.(21_000_000.12345678).to_dry_result).to eq Success(BigDecimal("21000000.12345678"))
+    end
+
     it "returns Failure on nils" do
       expect(subject.(nil).to_dry_result).to eq Failure(["is not a decimal number"])
     end
@@ -1519,6 +1523,18 @@ RSpec.describe Datacaster do
             }
           )
         )
+      end
+
+      it "picks hash or array merging for each call" do
+        mapping = Datacaster.schema do
+          transform_to_hash(
+            a: merge_message_keys(:a)
+          )
+        end
+
+        mapping.(a: {b: "1"})
+
+        expect(mapping.(a: "1").to_dry_result).to eq Success(a: ["1"])
       end
 
       it "warps scalar values into array" do

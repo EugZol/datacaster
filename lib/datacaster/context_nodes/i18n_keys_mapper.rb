@@ -9,7 +9,7 @@ module Datacaster
 
       private
 
-      def transform_errors(errors)
+      def transform_errors(errors, _runtime)
         return errors unless errors.length == 1 && errors.is_a?(Array)
 
         error = errors.first

@@ -12,7 +12,7 @@ module Datacaster
         Runtimes::I18n.new(parent)
       end
 
-      def transform_errors(errors)
+      def transform_errors(errors, runtime)
         @i18n_value.with_args(runtime.args) * errors
       end
     end
