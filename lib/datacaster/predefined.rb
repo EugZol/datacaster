@@ -340,14 +340,14 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         # strictly validate format of string, BigDecimal() doesn't do that
-        raise ArgumentError, "non-finite decimal" unless Float(x).finite?
+        Float(x)
 
         # BigDecimal(Float, digits) keeps `digits` significant digits, so
         # BigDecimal(1234567.89, 8) is 1234567.9. The Float's own string
         # form parses exactly: BigDecimal("1234567.89") is 1234567.89.
         x = x.to_s if x.is_a?(Float)
 
-        BigDecimal(x, digits)
+        BigDecimal(x, digits).tap { |d| raise ArgumentError, "non-finite decimal" unless d.finite? }
       end.i18n_key(*error_keys).json_schema(type: 'string')
     end
 

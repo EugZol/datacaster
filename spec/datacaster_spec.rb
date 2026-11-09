@@ -221,13 +221,14 @@ RSpec.describe Datacaster do
       expect(subject.(nil).to_dry_result).to eq Failure(["is not a decimal number"])
     end
 
-    it "returns Failure on overflowing strings" do
-      expect(subject.("1e999").to_dry_result).to eq Failure(["is not a decimal number"])
-      expect(subject.("-1e999").to_dry_result).to eq Failure(["is not a decimal number"])
+    it "converts numbers beyond Float range" do
+      expect(subject.("1e999").to_dry_result).to eq Success(BigDecimal("1e999"))
+      expect(subject.("-1e999").to_dry_result).to eq Success(BigDecimal("-1e999"))
+      expect(subject.(BigDecimal("1e999")).to_dry_result).to eq Success(BigDecimal("1e999"))
     end
 
     it "returns Failure on non-finite numbers" do
-      [Float::INFINITY, -Float::INFINITY, Float::NAN, BigDecimal("Infinity"), BigDecimal("1e999")].each do |x|
+      [Float::INFINITY, -Float::INFINITY, Float::NAN, BigDecimal("Infinity"), BigDecimal("-Infinity"), BigDecimal("NaN")].each do |x|
         expect(subject.(x).to_dry_result).to eq Failure(["is not a decimal number"])
       end
     end

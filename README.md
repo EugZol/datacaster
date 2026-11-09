@@ -478,7 +478,7 @@ I18n keys: `error_key`, `'.array'`, `'datacaster.errors.array'`.
 
 #### `decimal(digits = 8, error_key = nil)`
 
-Returns ValidResult if and only if provided value is either a float, integer or string representing float/integer. Non-finite values (`Infinity`, `NaN`) and values overflowing `Float` (e.g. `"1e999"`) are rejected.
+Returns ValidResult if and only if provided value is either a float, integer or string representing float/integer. Non-finite values (`Infinity`, `NaN`) are rejected.
 
 Transforms the value to the `BigDecimal` instance.
 
