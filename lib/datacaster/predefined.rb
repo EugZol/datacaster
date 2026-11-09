@@ -329,7 +329,7 @@ module Datacaster
     def numeric(error_key = nil)
       error_keys = ['.numeric', 'datacaster.errors.numeric']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Numeric) }.
+      check { |x| x.is_a?(Numeric) && x.finite? }.
         i18n_key(*error_keys).
         json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
     end
@@ -340,7 +340,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         # strictly validate format of string, BigDecimal() doesn't do that
-        Float(x)
+        raise ArgumentError, "non-finite decimal" unless Float(x).finite?
 
         # BigDecimal(Float, digits) keeps `digits` significant digits, so
         # BigDecimal(1234567.89, 8) is 1234567.9. The Float's own string
@@ -522,7 +522,7 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
 
       Trier.new([ArgumentError, TypeError]) do |x|
-        Float(x)
+        Float(x).tap { |f| raise ArgumentError, "non-finite float" unless f.finite? }
       end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float')
     end
 

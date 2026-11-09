@@ -194,6 +194,12 @@ RSpec.describe Datacaster do
     it "returns Failure on string numbers" do
       expect(subject.("100").to_dry_result).to eq Failure(["is not a number"])
     end
+
+    it "returns Failure on non-finite numbers" do
+      [Float::INFINITY, -Float::INFINITY, Float::NAN, BigDecimal("Infinity"), BigDecimal("NaN")].each do |x|
+        expect(subject.(x).to_dry_result).to eq Failure(["is not a number"])
+      end
+    end
   end
 
   describe "decimal typecasting" do
@@ -213,6 +219,17 @@ RSpec.describe Datacaster do
 
     it "returns Failure on nils" do
       expect(subject.(nil).to_dry_result).to eq Failure(["is not a decimal number"])
+    end
+
+    it "returns Failure on overflowing strings" do
+      expect(subject.("1e999").to_dry_result).to eq Failure(["is not a decimal number"])
+      expect(subject.("-1e999").to_dry_result).to eq Failure(["is not a decimal number"])
+    end
+
+    it "returns Failure on non-finite numbers" do
+      [Float::INFINITY, -Float::INFINITY, Float::NAN, BigDecimal("Infinity"), BigDecimal("1e999")].each do |x|
+        expect(subject.(x).to_dry_result).to eq Failure(["is not a decimal number"])
+      end
     end
   end
 
@@ -250,6 +267,10 @@ RSpec.describe Datacaster do
 
       it "doesn't pass non-numerics" do
         expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+
+      it "doesn't pass infinity on the unbounded side" do
+        expect(subject.(-Float::INFINITY).to_dry_result).to eq Failure(["is not a number"])
       end
     end
 
@@ -312,6 +333,10 @@ RSpec.describe Datacaster do
 
       it "doesn't pass non-numerics" do
         expect(subject.(:'123').to_dry_result).to eq Failure(["is not a number"])
+      end
+
+      it "doesn't pass infinity on the unbounded side" do
+        expect(subject.(Float::INFINITY).to_dry_result).to eq Failure(["is not a number"])
       end
     end
 
@@ -526,6 +551,22 @@ RSpec.describe Datacaster do
 
     it "returns Failure when unable to coerce" do
       expect(subject.("no number").to_dry_result).to eq Failure(["does not look like a float"])
+    end
+
+    it "returns Failure on overflowing strings" do
+      expect(subject.("1e999").to_dry_result).to eq Failure(["does not look like a float"])
+      expect(subject.("-1e999").to_dry_result).to eq Failure(["does not look like a float"])
+    end
+
+    it "returns Failure on non-finite floats" do
+      [Float::INFINITY, -Float::INFINITY, Float::NAN].each do |x|
+        expect(subject.(x).to_dry_result).to eq Failure(["does not look like a float"])
+      end
+    end
+
+    it "doesn't let infinity through a one-sided minimum bound" do
+      schema = described_class.schema { to_float & minimum(0) }
+      expect(schema.("1e999").to_dry_result).to eq Failure(["does not look like a float"])
     end
   end
 
