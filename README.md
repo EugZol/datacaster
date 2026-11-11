@@ -482,7 +482,10 @@ Returns ValidResult if and only if provided value is either a float, integer or 
 
 Transforms the value to the `BigDecimal` instance.
 
-I18n keys: `error_key`, `'.decimal'`, `'datacaster.errors.decimal'`.
+I18n keys:
+
+* not a decimal – `error_key`, `'.decimal'`, `'datacaster.errors.decimal'`
+* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `float(error_key = nil)`
 
@@ -508,7 +511,10 @@ I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
 Returns ValidResult if and only if provided value is a finite number (Ruby's `Numeric`, excluding `Infinity` and `NaN`). Doesn't transform the value.
 
-I18n keys: `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`.
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `string(error_key = nil)`
 
@@ -535,7 +541,7 @@ I18n keys:
 
 #### `maximum(max, error_key = nil, inclusive: true)`
 
-Returns ValidResult if and only if provided value is a finite number and is less than `max`. If `inclusive` set to true, provided value should be less than or equal to `max`. Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number and is less than `max`. If `inclusive` set to true, provided value should be less than or equal to `max`. Doesn't transform the value.
 
 I18n keys:
 
@@ -545,7 +551,7 @@ I18n keys:
 
 #### `minimum(min, error_key = nil, inclusive: true)`
 
-Returns ValidResult if and only if provided value is a finite number and is greater than `min`. If `inclusive` set to true, provided value should be greater than or equal to `min`. Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number and is greater than `min`. If `inclusive` set to true, provided value should be greater than or equal to `min`. Doesn't transform the value.
 
 I18n keys:
 
@@ -931,7 +937,10 @@ I18n keys: `error_key`, `'.to_boolean'`, `'datacaster.errors.to_boolean'`
 
 Returns ValidResult if and only if the value is an integer, float or string representing integer/float, and the resulting float is finite (`"1e999"`, `Infinity` and `NaN` are rejected). Transforms value to float.
 
-I18n keys: `error_key`, `'.to_float'`, `'datacaster.errors.to_float'`
+I18n keys:
+
+* not a float – `error_key`, `'.to_float'`, `'datacaster.errors.to_float'`
+* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `to_integer(error_key = nil)`
 

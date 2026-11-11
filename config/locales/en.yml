@@ -9,6 +9,7 @@ en:
       compare: does not equal %{reference}
       decimal: is not a decimal number
       empty: should not be empty
+      finite: is not a finite number
       float: is not a float
       hash_value: is not a hash
       included_in: is not one of %{reference}

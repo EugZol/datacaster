@@ -327,11 +327,7 @@ module Datacaster
     # Strict types
 
     def numeric(error_key = nil)
-      error_keys = ['.numeric', 'datacaster.errors.numeric']
-      error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Numeric) && x.finite? }.
-        i18n_key(*error_keys).
-        json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
+      numeric_type(error_key) & finite_value(error_key)
     end
 
     def decimal(digits = 8, error_key = nil)
@@ -347,8 +343,8 @@ module Datacaster
         # form parses exactly: BigDecimal("1234567.89") is 1234567.89.
         x = x.to_s if x.is_a?(Float)
 
-        BigDecimal(x, digits).tap { |d| raise ArgumentError, "non-finite decimal" unless d.finite? }
-      end.i18n_key(*error_keys).json_schema(type: 'string')
+        BigDecimal(x, digits)
+      end.i18n_key(*error_keys).json_schema(type: 'string') & finite_value(error_key)
     end
 
     def array(error_key = nil)
@@ -428,7 +424,7 @@ module Datacaster
           check { |x| x < max }
         end
 
-      numeric(error_key) & caster.i18n_key(*error_keys, max:)
+      numeric_type(error_key) & caster.i18n_key(*error_keys, max:)
     end
 
     def minimum(min, error_key = nil, inclusive: true)
@@ -446,7 +442,7 @@ module Datacaster
           check { |x| x > min }
         end
 
-      numeric(error_key) & caster.i18n_key(*error_keys, min:)
+      numeric_type(error_key) & caster.i18n_key(*error_keys, min:)
     end
 
     def string(error_key = nil)
@@ -522,8 +518,8 @@ module Datacaster
       error_keys.unshift(error_key) if error_key
 
       Trier.new([ArgumentError, TypeError]) do |x|
-        Float(x).tap { |f| raise ArgumentError, "non-finite float" unless f.finite? }
-      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float')
+        Float(x)
+      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float') & finite_value(error_key)
     end
 
     def to_integer(error_key = nil)
@@ -537,6 +533,25 @@ module Datacaster
 
     def optional_param(base)
       transform_if_present { |x| x == '' ? Datacaster::Absent.instance : x } & (absent | base)
+    end
+
+    private
+
+    # Checks only the type, lets Infinity and NaN through: minimum/maximum use
+    # it, since a bound check on Infinity is still meaningful (Infinity >= 0).
+    def numeric_type(error_key = nil)
+      error_keys = ['.numeric', 'datacaster.errors.numeric']
+      error_keys.unshift(error_key) if error_key
+      check { |x| x.is_a?(Numeric) }.
+        i18n_key(*error_keys).
+        json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
+    end
+
+    # Expects a Numeric, rejects Infinity and NaN.
+    def finite_value(error_key = nil)
+      error_keys = ['.finite', 'datacaster.errors.finite']
+      error_keys.unshift(error_key) if error_key
+      check(&:finite?).i18n_key(*error_keys)
     end
   end
 end
