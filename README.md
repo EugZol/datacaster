@@ -507,14 +507,14 @@ Returns ValidResult if and only if provided value is an integer. Doesn't transfo
 
 I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
-#### `numeric(error_key = nil)`
+#### `numeric(error_key = nil, finite: true)`
 
-Returns ValidResult if and only if provided value is a finite number (Ruby's `Numeric`, excluding `Infinity` and `NaN`). Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number (Ruby's `Numeric`). With `finite: true` (default) `Infinity` and `NaN` are rejected. Doesn't transform the value.
 
 I18n keys:
 
 * not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
-* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
+* not finite (when `finite` is `true`) – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `string(error_key = nil)`
 

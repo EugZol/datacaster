@@ -201,6 +201,14 @@ RSpec.describe Datacaster do
       end
     end
 
+    it "passes non-finite numbers with finite: false" do
+      schema = described_class.schema { numeric(finite: false) }
+      [Float::INFINITY, -Float::INFINITY].each do |x|
+        expect(schema.(x).to_dry_result).to eq Success(x)
+      end
+      expect(schema.("1").to_dry_result).to eq Failure(["is not a number"])
+    end
+
     it "uses custom error key for non-finite numbers" do
       schema = described_class.schema { numeric("datacaster.errors.integer") }
       expect(schema.(Float::INFINITY).to_dry_result).to eq Failure(["is not an integer"])
