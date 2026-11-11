@@ -1,5 +1,3 @@
-require 'ostruct'
-
 RSpec.describe Datacaster do
   include Dry::Monads[:result]
 
