@@ -1,5 +1,3 @@
-require 'ostruct'
-
 module Datacaster
   module Runtimes
     class UserContext < Base

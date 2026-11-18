@@ -326,12 +326,15 @@ module Datacaster
 
     # Strict types
 
-    def numeric(error_key = nil)
+    def numeric(error_key = nil, finite: true)
       error_keys = ['.numeric', 'datacaster.errors.numeric']
       error_keys.unshift(error_key) if error_key
-      check { |x| x.is_a?(Numeric) }.
+      caster = check { |x| x.is_a?(Numeric) }.
         i18n_key(*error_keys).
         json_schema(oneOf: [{ 'type' => 'string' }, { 'type' => 'number' }])
+
+      caster &= finite_value(error_key) if finite
+      caster
     end
 
     def decimal(digits = 8, error_key = nil)
@@ -348,7 +351,7 @@ module Datacaster
         x = x.to_s if x.is_a?(Float)
 
         BigDecimal(x, digits)
-      end.i18n_key(*error_keys).json_schema(type: 'string')
+      end.i18n_key(*error_keys).json_schema(type: 'string') & finite_value(error_key)
     end
 
     def array(error_key = nil)
@@ -428,7 +431,7 @@ module Datacaster
           check { |x| x < max }
         end
 
-      numeric(error_key) & caster.i18n_key(*error_keys, max:)
+      numeric(error_key, finite: false) & caster.i18n_key(*error_keys, max:)
     end
 
     def minimum(min, error_key = nil, inclusive: true)
@@ -446,7 +449,7 @@ module Datacaster
           check { |x| x > min }
         end
 
-      numeric(error_key) & caster.i18n_key(*error_keys, min:)
+      numeric(error_key, finite: false) & caster.i18n_key(*error_keys, min:)
     end
 
     def string(error_key = nil)
@@ -523,7 +526,7 @@ module Datacaster
 
       Trier.new([ArgumentError, TypeError]) do |x|
         Float(x)
-      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float')
+      end.i18n_key(*error_keys).json_schema(type: 'number', format: 'float') & finite_value(error_key)
     end
 
     def to_integer(error_key = nil)
@@ -537,6 +540,15 @@ module Datacaster
 
     def optional_param(base)
       transform_if_present { |x| x == '' ? Datacaster::Absent.instance : x } & (absent | base)
+    end
+
+    private
+
+    # Expects a Numeric, rejects Infinity and NaN.
+    def finite_value(error_key = nil)
+      error_keys = ['.finite', 'datacaster.errors.finite']
+      error_keys.unshift(error_key) if error_key
+      check(&:finite?).i18n_key(*error_keys)
     end
   end
 end

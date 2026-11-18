@@ -478,11 +478,14 @@ I18n keys: `error_key`, `'.array'`, `'datacaster.errors.array'`.
 
 #### `decimal(digits = 8, error_key = nil)`
 
-Returns ValidResult if and only if provided value is either a float, integer or string representing float/integer.
+Returns ValidResult if and only if provided value is either a float, integer or string representing float/integer. Non-finite values (`Infinity`, `NaN`) are rejected.
 
 Transforms the value to the `BigDecimal` instance.
 
-I18n keys: `error_key`, `'.decimal'`, `'datacaster.errors.decimal'`.
+I18n keys:
+
+* not a decimal – `error_key`, `'.decimal'`, `'datacaster.errors.decimal'`
+* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `float(error_key = nil)`
 
@@ -504,11 +507,14 @@ Returns ValidResult if and only if provided value is an integer. Doesn't transfo
 
 I18n keys: `error_key`, `'.integer'`, `'datacaster.errors.integer'`.
 
-#### `numeric(error_key = nil)`
+#### `numeric(error_key = nil, finite: true)`
 
-Returns ValidResult if and only if provided value is a number (Ruby's `Numeric`). Doesn't transform the value.
+Returns ValidResult if and only if provided value is a number (Ruby's `Numeric`). With `finite: true` (default) `Infinity` and `NaN` are rejected. Doesn't transform the value.
 
-I18n keys: `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`.
+I18n keys:
+
+* not a number – `error_key`, `'.numeric'`, `'datacaster.errors.numeric'`
+* not finite (when `finite` is `true`) – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `string(error_key = nil)`
 
@@ -929,9 +935,12 @@ I18n keys: `error_key`, `'.to_boolean'`, `'datacaster.errors.to_boolean'`
 
 #### `to_float(error_key = nil)`
 
-Returns ValidResult if and only if the value is an integer, float or string representing integer/float. Transforms value to float.
+Returns ValidResult if and only if the value is an integer, float or string representing integer/float, and the resulting float is finite (`"1e999"`, `Infinity` and `NaN` are rejected). Transforms value to float.
 
-I18n keys: `error_key`, `'.to_float'`, `'datacaster.errors.to_float'`
+I18n keys:
+
+* not a float – `error_key`, `'.to_float'`, `'datacaster.errors.to_float'`
+* not finite – `error_key`, `'.finite'`, `'datacaster.errors.finite'`
 
 #### `to_integer(error_key = nil)`
 
